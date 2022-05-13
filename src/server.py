@@ -18,9 +18,9 @@ def receiveOperation() :
                     print("CONVERTIR LA OPERACION")
                     result = 0
 
-                    sendVerification()
+                    sendVerification(serverAddressPort)
 
-                    sendResult()
+                    sendResult(serverAddressPort, result, operation)
 
                     receiveVerification()
                 else:
@@ -32,7 +32,7 @@ def receiveOperation() :
     else:
         print("Numero de secuencia erroneo")
 
-def sendVerification() :
+def sendVerification(serverAddressPort) :
     dataJson = {"type":"ack","ack":ack,"seq":seq}
     jsonString = json.dump(dataJson)
     # Se encripta
@@ -40,7 +40,7 @@ def sendVerification() :
 
     UDPServerSocket.sendto(jsonToSend, serverAddressPort)
 
-def sendResult() :
+def sendResult(serverAddressPort, result, operation) :
     dataJson = {"seq":seq,"type":"request","fin":fin,"request":"write","result":result,"operation":operation}
     jsonString = json.dump(dataJson)
     # Se encripta
@@ -73,9 +73,9 @@ def receiveRequest() :
     request = jsonToReceive[0]
     serverAddressPort = jsonToReceive[1]
 
-    req = operation.decode()
+    req = request.decode()
 
-    requestJson = json.loads(oper)
+    requestJson = json.loads(req)
 
     if requestJson["type"] == "disconnect" :
         UDPServerSocket.close()
@@ -84,13 +84,12 @@ def receiveRequest() :
 
 # Inicio del recibimiento del producto
 UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-host = "127.0.0.1"
 port = 8080
 bufferSize = 1024
-
 ack = 0
 seq = 0
 fin = True
+host = "127.0.0.1"
 UDPServerSocket.bind((host, port))
 
 while True:
