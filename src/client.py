@@ -72,6 +72,23 @@ def sendVerification() :
     # Envia la verificacion que recibio el resultado
     UDPClientSocket.sendto(jsonToSend, serverAddressPort)
 
+    sendRequest()
+
+def sendRequest() :
+    opcion = input("Ingrese una opcion: ")
+
+    if opcion[0] == "-" and opcion[1] == "q" :
+        dataJson = {"seq":seq,"type":"disconnect"}
+        jsonString = json.dump(dataJson)
+        # Se encripta
+        jsonToSend = str.encode(jsonString)
+
+        # Envia la solicitud de desconexion
+        UDPClientSocket.sendto(jsonToSend, serverAddressPort)
+        UDPClientSocket.close()
+    else :
+        print("HACE OTRA OPERACION")
+
 # Inicio del envio de la operacion
 UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 port = 8080
@@ -80,10 +97,12 @@ seq = 0
 ack = 0
 fin = True
 serverAddressPort = ("127.0.0.1", port)
+
 while True: 
     sendOperation()
     receiveVerification()
-    
+
+
 def encryption() :
     print("HOLA MUNDO")
 
