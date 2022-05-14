@@ -1,86 +1,133 @@
-import socket
+from http import client
 import json
+import random
+from socket import socket
+from socketserver import UDPServer
+from urllib import request
 
-def receiveOperation() :
-    jsonToReceive = UDPServerSocket.recvfrom(bufferSize)
-    operation = jsonToReceive[0]
-    serverAddressPort = jsonToReceive[1]  
+from pip import main
 
-    oper = operation.decode()
 
-    operationJson = json.loads(oper)
+class Server:
+	def __init__(self, address, port):
+		self.ip = address
+		self.address_port = (address, port)
+		self.UDP_socket = socket.socket(
+			family=socket.AF_INET, type=socket.SOCK_DGRAM)
+		self.buffer_size = 128
+		# TODO: put random values for numSeq and numAck
+		self.seq = 0
+		self.ack = 0
+		self.fin = True
 
-    if operationJson["seq"] == seq: 
-        if operationJson["type"] == "request":
-            if operationJson["fin"] == True:
-                if operationJson["request"] == "write":
-                    operation = ""
-                    print("CONVERTIR LA OPERACION")
-                    result = 0
+# taken from: https://www.geeksforgeeks.org/caesar-cipher-in-cryptography/
+	def cifrado_cesar(self, message, shift):
+		result = ""
 
-                    sendVerification(serverAddressPort)
+		for index in range(len(message)):
+			char = message[index]
 
-                    sendResult(serverAddressPort, result, operation)
+			# Encrypt uppercase characters
+			if (char.isupper()):
+				result += chr((ord(char) + shift-65) % 26 + 65)
 
-                    receiveVerification()
-                else:
-                    print("Request erroneo")
-            else:
-                print("TIENE QUE HACERSE FRACCIONADO")
-        else:
-            print("Type erroneo")
-    else:
-        print("Numero de secuencia erroneo")
+			# Encrypt lowercase characters
+			else:
+				result += chr((ord(char) + shift - 97) % 26 + 97)
 
-def sendVerification(serverAddressPort) :
-    dataJson = {"type":"ack","ack":ack,"seq":seq}
-    jsonString = json.dump(dataJson)
-    # Se encripta
-    jsonToSend = str.encode(jsonString)
+		return result
 
-    UDPServerSocket.sendto(jsonToSend, serverAddressPort)
+	def receiveOperation(self):
+		json_to_recv = self.UDP_socket.recvfrom(self.buffer_size)
+		operation = json_to_recv[0]
+		server_address_port = json_to_recv[1]
 
-def sendResult(serverAddressPort, result, operation) :
-    dataJson = {"seq":seq,"type":"request","fin":fin,"request":"write","result":result,"operation":operation}
-    jsonString = json.dump(dataJson)
-    # Se encripta
-    jsonToSend = str.encode(jsonString)
+		oper = operation.decode()
 
-    UDPServerSocket.sendto(jsonToSend, serverAddressPort)
+		operation_json = json.loads(oper)
 
-def receiveVerification() :
-    jsonToReceive = UDPServerSocket.recvfrom(bufferSize)
-    verification = jsonToReceive[0]
-    serverAddressPort = jsonToReceive[1]
+		if operation_json["seq"] == self.seq:
+			if operation_json["type"] == "request":
+				if operation_json["fin"] == True:
+					if operation_json["request"] == "write":
+						operation = ""
+						print("CONVERTIR LA OPERACION")
+						result = 0
 
-    veri = verification.decode()
+						self.send_verification(server_address_port)
 
-    verificationJson = json.loads(veri)
+						self.send_result(server_address_port, result, operation)
 
-    if verificationJson["type"] == "ack" :
-        if verificationJson["ack"] == ack:
-            if verification["seq"] == seq:
-                receiveRequest()
-            else:
-                print("Seq erroneo")
-        else:
-            print("Ack erroneo")
-    else :
-        print("Type erroneo")
+						self.recv_verification()
+					else:
+						print("Request erroneo")
+				else:
+					print("TIENE QUE HACERSE FRACCIONADO")
+			else:
+				print("Type erroneo")
+		else:
+			print("Numero de secuencia erroneo")
 
-def receiveRequest() :
-    jsonToReceive = UDPServerSocket.recvfrom(bufferSize)
-    request = jsonToReceive[0]
-    serverAddressPort = jsonToReceive[1]
+	def send_verification(self, serverAddressPort):
+		data_json = {"type": "ack", "ack": self.ack, "seq": self.seq}
+		json_string = json.dump(data_json)
+		# Se encripta
+		json_to_send = str.encode(json_string)
 
-    req = request.decode()
+		self.UDP_socket.sendto(json_to_send, serverAddressPort)
 
-    requestJson = json.loads(req)
+	def send_result(self, serverAddressPort, result, operation):
+		data_json = {"seq": self.seq, "type": "request", "fin": self.fin,
+				"request": "write", "result": result, "operation": operation}
+		json_string = json.dump(data_json)
+		# Se encripta
+		json_to_send = str.encode(json_string)
 
-    if requestJson["type"] == "disconnect" :
-        UDPServerSocket.close()
-    else :
-        print("RECIBE OPERACION")
+		self.UDP_socket.sendto(json_to_send, serverAddressPort)
+
+	def recv_verification(self):
+		json_to_recv = self.UDP_socket.recvfrom(self.buffer_size)
+		verification = json_to_recv[0]
+		server_address_port = json_to_recv[1]
+
+		veri = verification.decode()
+
+		verification_json = json.loads(veri)
+
+		if verification_json["type"] == "ack":
+			if verification_json["ack"] == self.ack:
+				if verification["seq"] == self.seq:
+					self.recv_request()
+				else:
+					print("Seq erroneo")
+			else:
+				print("Ack erroneo")
+		else:
+			print("Type erroneo")
+
+	def receive_request(self):
+		json_to_recv = UDPServer.recvfrom(self.buffer_size)
+		request = json_to_recv[0]
+		server_address_port = json_to_recv[1]
+		req = request.decode()
+
+		request_json = json.loads(req)
+
+		if request_json["type"] == "disconnect":
+			self.UDP_socket.close()
+		else:
+			print("RECIBE OPERACION")
+
+	def main(self):
+		while True:
+			self.handshake()
+			self.recv_operation()
+
+
+if __name__ == "__main__":
+	server = Server("127.0.0.1", 8080)
+	server.main()
+
 
 # Inicio del recibimiento del producto
 UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
@@ -91,21 +138,3 @@ seq = 0
 fin = True
 host = "127.0.0.1"
 UDPServerSocket.bind((host, port))
-
-while True:
-    receiveOperation()
-
-def authenticator() :
-    print("HOLA MUNDO")
-
-def listen_forever() :
-    print("HOLA MUNDO")
-
-def stop_listening() :
-    print("HOLA MUNDO")
-
-def bind_connections() :
-    print("HOLA MUNDO")
-
-def receive_message():
-    print("HOLA MUNDO")
