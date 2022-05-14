@@ -8,6 +8,7 @@ from pip import main
 
 class Client:
 	def __init__(self, address, port):
+		self.ip = address
 		self.address_port = (address, port)
 		self.UDP_socket = socket.socket(
 			family=socket.AF_INET, type=socket.SOCK_DGRAM)
@@ -18,12 +19,21 @@ class Client:
 		self.fin = True
 
 	def send_json(self, data_json):
+		
 		json_string = json.dump(data_json)
+		self.cifrado_cesar(json_string, 3)
 		# Se encripta
 		json_to_send = str.encode(json_string)
 
 		# Envia la solicitud de desconexion
 		self.UDP_socket.sendto(json_to_send, self.address_port)
+
+	def recv_json(self): 
+		msg_from_server = self.UDP_socket.recvfrom(self.buffer_size)
+		json_server = msg_from_server[0].decode()
+		json_server = self.cifrado_cesar(json_server, 26-3)
+		print(json_server)
+		return json_server
 
 	def option_quit(self):
 		data_json = {"seq": self.seq, "type": "disconnect"}
@@ -116,8 +126,48 @@ class Client:
 		else:
 			print("Ack erroneo")
 
+# taken from: https://www.geeksforgeeks.org/caesar-cipher-in-cryptography/
+	def cifrado_cesar(self, message, shift):
+		result = ""
+
+		for index in range(len(message)):
+			char = message[index]
+
+			# Encrypt uppercase characters
+			if (char.isupper()):
+				result += chr((ord(char) + shift-65) % 26 + 65)
+
+			# Encrypt lowercase characters
+			else:
+				result += chr((ord(char) + shift - 97) % 26 + 97)
+
+		return result
+
+	
+	def handshake(self):
+		data_json = {"type": "syn", "seq": self.seq}
+		self.send_json(data_json)
+		
+		json_server = self.recv_json()
+	
+		self.ack = json_server["seq"] 
+		self.seq += 1
+	
+		data_json = {"type": "ack", "ack": self.ack, "seq": self.seq}
+		self.send_json(data_json)
+
+		self.ack = json_server["seq"]
+		self.seq += 1
+
+		json_server = self.recv_json()
+		self.ack = json_server["seq"]
+		self.address_port = (self.ip, json_server["port"])
+		
+
+
 	def main(self):
 		while(True):
+			self.handshake()
 			self.send_operation()
 			self.receive_verification()
 
