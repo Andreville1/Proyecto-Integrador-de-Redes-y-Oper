@@ -1,8 +1,8 @@
-from http import client
+
 import argparse
 import json
 import random
-from socket import socket
+import socket
 import sys
 
 from pip import main
@@ -217,43 +217,64 @@ class Client:
 		else:
 			print("Seq erroneo")
 
-# taken from: https://www.geeksforgeeks.org/caesar-cipher-in-cryptography/
+# taken from: https://www.pythonpool.com/caesar-cipher-python/
 	def cifrado_cesar(self, message, shift):
-		result = ""
-
-		for index in range(len(message)):
-			char = message[index]
-
-			# Encrypt uppercase characters
-			if (char.isupper()):
-				result += chr((ord(char) + shift-65) % 26 + 65)
-
-			# Encrypt lowercase characters
+		encryp_str = ""
+		for element in message:
+			if element.isupper():
+				temp = 65 + ((ord(element) - 65 + shift) % 26)
+				encryp_str = encryp_str + chr(temp)
+			elif element.islower():
+				temp = 97 + ((ord(element) - 97 + shift) % 26)
+				encryp_str = encryp_str + chr(temp)
 			else:
-				result += chr((ord(char) + shift - 97) % 26 + 97)
+				encryp_str = encryp_str + element
+		return encryp_str
 
-		return result
-
-	
 	def handshake(self):
+		# create message syn
 		data_json = {"type": "syn", "seq": self.seq}
-		self.send_json(data_json)
-		
-		json_server = self.recv_json()
-	
-		self.ack = json_server["seq"] 
+		# encrypt
+		data_json_cifrado = self.cifrado_cesar(str(data_json), 3)
+		bytesToSend = str.encode(data_json_cifrado)
+		# send to server
+		self.UDP_socket.sendto(bytesToSend, self.address_port)
+
+		# recv from server
+		msg_from_server = self.UDP_socket.recvfrom(self.buffer_size)
+		# decrypt
+		msg = self.decifrado_cesar(msg_from_server[0].decode(), 26-3)
+
+		# self.ack = server.seq
+		self.ack = msg["seq"]
+		# self.ack_exp = server.seq + 1
+		self.ack_expected = msg["seq"] + 1
+		# self.seq +1
 		self.seq += 1
-	
+
+		# create messagr ack
 		data_json = {"type": "ack", "ack": self.ack, "seq": self.seq}
-		self.send_json(data_json)
+		# encrypt
+		data_json_cifrado = self.cifrado_cesar(data_json, 3)
+		bytesToSend = str.encode(data_json_cifrado)
+		# send to server
+		self.UDP_socket.sendto(bytesToSend, self.address_port)
 
-		self.ack = json_server["seq"]
-		self.seq += 1
-
-		json_server = self.recv_json()
-		self.ack = json_server["seq"]
-		self.address_port = (self.ip, json_server["port"])
-		
+		# recv from server
+		msg_from_server = self.UDP_socket.recvfrom(self.buffer_size)
+		# decrypt
+		msg = self.cifrado_cesar(msg_from_server[0].decode(), 26-3)
+		# check if server_seq = ack_expected
+		if msg["seq"] == self.ack_expected:
+			# port = server_port
+			self.address_port = (self.ip, msg["port"])
+			# ack_expected + 1
+			self.ack_expected += 1
+			# ack = server_seq
+			ack = msg["seq"]
+		else:
+			print("couldnt establish connection")
+			self.UDP_socket.close()
 
 
 	def main(self):
