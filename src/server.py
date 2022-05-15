@@ -6,9 +6,13 @@ from socketserver import UDPServer
 from urllib import request
 
 from pip import main
+from math import sqrt
+
+
 
 
 class Server:
+	
 	def __init__(self, address, port):
 		self.ip = address
 		self.address_port = (address, port)
@@ -36,33 +40,83 @@ class Server:
 				result += chr((ord(char) + shift - 97) % 26 + 97)
 
 		return result
+	
+	def credential_validation(self, user, password):
+		valid_user = False
+		can_write = False
+		with open('ruta_del_archivo/nombre.json') as file:
+			data = json.load(file)
+			for users in data['users']:
+				if (users['username'] == user):
+					if (users['password'] == password):
+						can_write = users['canWrite']
+						valid_user = True
 
-	def receiveOperation(self):
-		json_to_recv = self.UDP_socket.recvfrom(self.buffer_size)
-		operation = json_to_recv[0]
-		server_address_port = json_to_recv[1]
+		return valid_user, can_write
 
-		oper = operation.decode()
+	def validation(self, json_msg):
+		#abro el archivo json y compruebo
+		user = json_msg["username"]
+		password = json_msg["password"]
+		validations = self.credential_validation(user, password)
+		return validations
+	
+	def login(self):
+		# Vincula la direccion e IP
+		UDPServerSocket.bind((host, port))
+		seq = random.randint(0, 100)
+		while True:
+			# Recibe el login
+			bytesAddressPair = UDPServerSocket.recvfrom(1024)
+			message = bytesAddressPair[0]
+			address = bytesAddressPair[1]
 
-		operation_json = json.loads(oper)
+			msg = str.decode(message)
+
+			json_msg = json.loads(msg)
+			validated, can_write= self.validation(json_msg)
+
+			# Envia la confirmacion de que le llego el login
+			self.send_verification(address)
+
+			# Envia que si fue validado o no
+			my_seq += 1
+			smg_to_send = {"seq":my_seq,"type":"login","fin":True,"username":"user","password":"pass","validated":validated, "canWrite":can_write}
+			smg_to_send = str(smg_to_send)
+
+			UDPServerSocket.sendto(str.encode(smg_to_send), address)
+
+	def verify_package(self):
+		operation_json, server_address_port = self.receive_package()
 
 		if operation_json["seq"] == self.seq:
 			if operation_json["type"] == "request":
-				if operation_json["fin"] == True:
-					if operation_json["request"] == "write":
-						operation = ""
-						print("CONVERTIR LA OPERACION")
-						result = 0
+				if operation_json["request"] == "write":
+					if operation_json["fin"] == True:
 
 						self.send_verification(server_address_port)
+						
+						operation = operation_json["operation"]
+						operation = operation.replace("**", "^")
+						result = eval(operation)
 
 						self.send_result(server_address_port, result, operation)
 
 						self.recv_verification()
 					else:
-						print("Request erroneo")
+						#Caso en que se fracciona el msg
+						self.send_verification(server_address_port)
+						operation_json, server_address_port = self.receive_package()
+						self.send_verification(server_address_port)
+
+						operation = operation_json["operation"]
+						operation = operation.replace("**", "^")
+						result = eval(operation)
+						
+						self.send_result(server_address_port, result, operation)
+						self.recv_verification()
 				else:
-					print("TIENE QUE HACERSE FRACCIONADO")
+					print("Request erroneo")
 			else:
 				print("Type erroneo")
 		else:
@@ -105,7 +159,7 @@ class Server:
 		else:
 			print("Type erroneo")
 
-	def receive_request(self):
+	def recv_request(self):
 		json_to_recv = UDPServer.recvfrom(self.buffer_size)
 		request = json_to_recv[0]
 		server_address_port = json_to_recv[1]
@@ -117,6 +171,17 @@ class Server:
 			self.UDP_socket.close()
 		else:
 			print("RECIBE OPERACION")
+
+	def receive_package(self):
+		json_to_recv = self.UDP_socket.recvfrom(self.buffer_size)
+		operation = json_to_recv[0]
+
+		server_address_port = json_to_recv[1]
+		oper = operation.decode()
+		operation_json = json.loads(oper)
+
+		return operation_json, server_address_port
+
 
 	def main(self):
 		while True:

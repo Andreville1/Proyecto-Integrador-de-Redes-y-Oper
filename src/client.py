@@ -1,10 +1,17 @@
 from http import client
+import argparse
 import json
 import random
 from socket import socket
+import sys
 
 from pip import main
 
+# Lee desde consola los argumentos de manera desordenada
+parser = argparse.ArgumentParser()
+parser.add_argument('-u', '--user', type=str)
+parser.add_argument('-p', '--password', type=str,)
+args = parser.parse_args()
 
 class Client:
 	def __init__(self, address, port):
@@ -17,6 +24,66 @@ class Client:
 		self.seq = 0
 		self.ack = 0
 		self.fin = True
+
+	def validate_user_permissions(self, json_validation_message):
+		rep = True
+		while(rep):
+			permission = input("¿Que tipo de permiso necesita?: -r = read y -w = write")
+
+			if (permission == '-w'):
+				if(json_validation_message["canWrite"] == True):
+					print("llama a metodo de André")
+					#LLAMA A METODO DE OPERACION
+					rep = False
+				else:
+					print("Permiso denegado: Usted no cuenta con permisos de escritura")
+
+			elif(permission == '-r'):
+				index = permission = input("Digite el numero de pagina que desee conocer")
+				#LEEE DEL DOCUMENTO
+				rep = False
+			else:
+				print("Comando invalido")
+
+	def authentication(self, user, password):
+
+		seq = random.randint(0, 100)
+		json_to_send ={"seq":seq,"type":"login","fin":True,"username":user,"password":password}
+		msg_to_send = str(json_to_send)
+		# Se encripta
+		self.UDP_socket.sendto(str.encode(msg_to_send), self.address_port)
+
+		# Recibe la confirmacion del servidor
+		# Copia la confirmacion y la direccion
+		confirmation_msg, addr = self.UDP_socket.recvfrom(1024)
+		json_confirmation_msg = json.loads(confirmation_msg)
+
+		while(json_confirmation_msg["ack"] != (seq+1)):
+			confirmation_msg, addr = self.UDP_socket.recvfrom(1024)
+			json_confirmation_msg = json.loads(confirmation_msg)
+		
+		# Recibe la validation
+		validation_msg, addr = self.UDP_socket.recvfrom(1024)
+		json_validation_msg = json.loads(validation_msg)
+
+
+		if (json_validation_msg["validated"] == True):
+			ack = int(json_validation_msg["seq"]) + 1
+			seq += 1
+			msg_to_server = {"type":"ack","ack":ack,"seq":seq}
+			msg_to_server = str(msg_to_server)
+			# Envia la confirmacion de que le llego ser aceptado
+			self.UDP_socket.sendto(str.encode(msg_to_server), self.address_port)
+			self.validate_user_permissions(json_validation_msg)
+		else:
+			print("[Cerrando conexion]: Usuario o contraseña invalida")
+			ack = int(json_validation_msg["seq"]) + 1
+			seq += 1
+			msg_to_server = {"type":"ack","ack":ack,"seq":seq}
+			msg_to_server = str(msg_to_server)
+			# Envia la confirmacion de que le llego no ser aceptado
+			self.UDP_socket.sendto(str.encode(msg_to_server), self.address_port)
+			self.UDP_socket.close()
 
 	def send_json(self, data_json):
 		
@@ -54,11 +121,54 @@ class Client:
 
 		self.send_request()
 
+	def receive_verification(self):
+		#TODO: refactor this:
+		valid = False
+		msg_from_server = self.UDP_socket.recvfrom(self.buffer_size)
+		verification = msg_from_server[0].decode()
+		serverAddressPort = msg_from_server[1].decode()
+		verification_json = json.loads(verification)
+
+		if verification_json["type"] == "ack":
+			if verification_json["ack"] == self.ack:
+				if verification_json["seq"] == self.seq:
+					valid = True
+
+				else:
+					print("Seq erroneo")
+			else:
+				print("Ack erroneo")
+		else:
+			print("Ack erroneo")
+
+		return valid
+
+	def verify(self):
+		valid = self.receive_verification(self)	
+		while (valid != True):	
+			valid = self.receive_verification(self)
+
 	def send_operation(self):
 		operation = input("Ingrese la operacion: ")
 		data_json = {"seq": self.seq, "type": "request",
                     "fin": self.fin, "request": "write", "operation": operation}
-		self.send_json(data_json)
+		json_string = json.dump(data_json)
+		
+		if (len(json_string.encode('utf-8')) <= 128):
+			self.send_json(data_json)
+		else:
+			self.fin = False
+			data_json_1 = {"seq": self.seq, "type": "request",
+                    "fin": self.fin, "request": "write"}
+			self.send_json(data_json_1)
+			self.verify()
+
+			data_json_2 = {"operation": operation}
+			self.send_json(data_json_2)
+			self.verify()
+
+				
+		
 
 	def recieve_operation(self):
 		#TODO: Refactor this:
@@ -107,25 +217,6 @@ class Client:
 		else:
 			print("Seq erroneo")
 
-	def receive_verification(self):
-		#TODO: refactor this:
-		msg_from_server = self.UDP_socket.recvfrom(self.buffer_size)
-		verification = msg_from_server[0].decode()
-		serverAddressPort = msg_from_server[1].decode()
-		verification_json = json.loads(verification)
-
-		if verification_json["type"] == "ack":
-			if verification_json["ack"] == self.ack:
-				if verification_json["seq"] == self.seq:
-					self.receive_operation()
-
-				else:
-					print("Seq erroneo")
-			else:
-				print("Ack erroneo")
-		else:
-			print("Ack erroneo")
-
 # taken from: https://www.geeksforgeeks.org/caesar-cipher-in-cryptography/
 	def cifrado_cesar(self, message, shift):
 		result = ""
@@ -169,7 +260,8 @@ class Client:
 		while(True):
 			self.handshake()
 			self.send_operation()
-			self.receive_verification()
+			if (self.receive_verification()):
+				self.receive_operation()
 
 
 if __name__ == "__main__":
