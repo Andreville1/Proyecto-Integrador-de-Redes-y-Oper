@@ -7,6 +7,8 @@ import sys
 
 from pip import main
 
+TIMEOUT = 2
+
 # Lee desde consola los argumentos de manera desordenada
 parser = argparse.ArgumentParser()
 parser.add_argument('-u', '--user', type=str)
@@ -25,15 +27,15 @@ class Client:
 		self.ack = 0
 		self.fin = True
 
-	def validate_user_permissions(self, json_validation_message):
+	def validate_user_permissions(self, can_write):
 		rep = True
 		while(rep):
-			permission = input("¿Que tipo de permiso necesita?: -r = read y -w = write")
+			permission = input("¿Que necesita?: -r = read, -w = write y -q = exit")
 
 			if (permission == '-w'):
-				if(json_validation_message["canWrite"] == True):
+				if(can_write == True):
 					print("llama a metodo de André")
-					#LLAMA A METODO DE OPERACION
+					self.send_operation(self)
 					rep = False
 				else:
 					print("Permiso denegado: Usted no cuenta con permisos de escritura")
@@ -42,6 +44,8 @@ class Client:
 				index = permission = input("Digite el numero de pagina que desee conocer")
 				#LEEE DEL DOCUMENTO
 				rep = False
+			elif(permission == '-q'):
+				self.option_quit(self)
 			else:
 				print("Comando invalido")
 
@@ -53,19 +57,30 @@ class Client:
 		# Se encripta
 		self.UDP_socket.sendto(str.encode(msg_to_send), self.address_port)
 
-		# Recibe la confirmacion del servidor
-		# Copia la confirmacion y la direccion
-		confirmation_msg, addr = self.UDP_socket.recvfrom(1024)
-		json_confirmation_msg = json.loads(confirmation_msg)
+		no_stop = True
+		while no_stop:
+			self.UDP_socket.settimeout(TIMEOUT)
+			try:
+				# Recibe la confirmacion del servidor
+				# Copia la confirmacion y la direccion
+				confirmation_msg, addr = self.UDP_socket.recvfrom(1024)
+				json_confirmation_msg = json.loads(confirmation_msg)
 
-		while(json_confirmation_msg["ack"] != (seq+1)):
-			confirmation_msg, addr = self.UDP_socket.recvfrom(1024)
-			json_confirmation_msg = json.loads(confirmation_msg)
-		
-		# Recibe la validation
-		validation_msg, addr = self.UDP_socket.recvfrom(1024)
-		json_validation_msg = json.loads(validation_msg)
+				while(json_confirmation_msg["ack"] != (seq+1)):
+					confirmation_msg, addr = self.UDP_socket.recvfrom(1024)
+					json_confirmation_msg = json.loads(confirmation_msg)
+				
+				# Recibe la validation
+				validation_msg, addr = self.UDP_socket.recvfrom(1024)
+				json_validation_msg = json.loads(validation_msg)
 
+				no_stop = False
+
+			except:
+				json_to_send ={"seq":seq,"type":"login","fin":True,"username":user,"password":password}
+				msg_to_send = str(json_to_send)
+				# Se encripta
+				self.UDP_socket.sendto(str.encode(msg_to_send), self.address_port)
 
 		if (json_validation_msg["validated"] == True):
 			ack = int(json_validation_msg["seq"]) + 1
@@ -74,7 +89,7 @@ class Client:
 			msg_to_server = str(msg_to_server)
 			# Envia la confirmacion de que le llego ser aceptado
 			self.UDP_socket.sendto(str.encode(msg_to_server), self.address_port)
-			self.validate_user_permissions(json_validation_msg)
+			self.validate_user_permissions(self, json_validation_msg["canWrite"])
 		else:
 			print("[Cerrando conexion]: Usuario o contraseña invalida")
 			ack = int(json_validation_msg["seq"]) + 1
@@ -105,21 +120,24 @@ class Client:
 	def option_quit(self):
 		data_json = {"seq": self.seq, "type": "disconnect"}
 		self.send_json(data_json)
-		self.UDP_socket.close()
+		
+		no_stop = True
+		while no_stop:
+			self.UDP_socket.settimeout(TIMEOUT)
+			try:
+				self.verify(self)
+				no_stop = False
+				self.UDP_socket.close()
+			except:
+				self.send_json(data_json)
 
 	def send_request(self):
-		opcion = input("Ingrese una opcion: ")
 
-		if opcion[0] == "-" and opcion[1] == "q":
-			self.option_quit()
-		else:
-			print("HACE OTRA OPERACION")
+		self.validate_user_permissions(self, True)
 
 	def send_verification(self):
 		data_json = {"type": "ack", "ack": self.ack, "seq": self.seq}
 		self.send_json(data_json)
-
-		self.send_request()
 
 	def receive_verification(self):
 		#TODO: refactor this:
@@ -133,7 +151,6 @@ class Client:
 			if verification_json["ack"] == self.ack:
 				if verification_json["seq"] == self.seq:
 					valid = True
-
 				else:
 					print("Seq erroneo")
 			else:
@@ -143,7 +160,7 @@ class Client:
 
 		return valid
 
-	def verify(self):
+	def verify(self): # Verifica que le llega el paquete que es
 		valid = self.receive_verification(self)	
 		while (valid != True):	
 			valid = self.receive_verification(self)
@@ -154,9 +171,22 @@ class Client:
                     "fin": self.fin, "request": "write", "operation": operation}
 		json_string = json.dump(data_json)
 		
-		if (len(json_string.encode('utf-8')) <= 128):
+		if (len(json_string.encode('utf-8')) <= 128): # Lo envia de una vez
 			self.send_json(data_json)
-		else:
+
+			no_stop = True
+			while no_stop :
+				self.UDP_socket.settimeout(TIMEOUT)
+				try:
+					self.verify(self)
+
+					no_stop = False
+				except :
+					self.send_json(data_json)
+
+			self.recv_operation(self)
+
+		else: # Lo envia por partes
 			self.fin = False
 			data_json_1 = {"seq": self.seq, "type": "request",
                     "fin": self.fin, "request": "write"}
@@ -167,10 +197,7 @@ class Client:
 			self.send_json(data_json_2)
 			self.verify()
 
-				
-		
-
-	def recieve_operation(self):
+	def recv_operation(self):
 		#TODO: Refactor this:
 		msg_from_server = self.UDP_socket.recvfrom(self.buffer_size)
 		operation = msg_from_server[0].decode()
@@ -184,34 +211,11 @@ class Client:
 					if operation_json["request"] == "write":
 						print(operation_json["result"])
 						self.send_verification()
+						self.send_request(self, operation_json)
 					else:
 						print("Request erroneo")
 				else:
-					print("DEBE ESPERAR LO FRACCIONADO")
-			else:
-				print("Type erroneo")
-		else:
-			print("Seq erroneo")
-
-	def receive_operation(self):
-		#TODO: refactor this:
-		msg_from_server = self.UDP_socket.recvfrom(self.buffer_size)
-		operation = msg_from_server[0].decode()
-		serverAddressPort = msg_from_server[1].decode()
-
-		operation_json = json.loads(operation)
-
-		if operation_json["seq"] == self.seq:
-			if operation_json["type"] == "request":
-				if operation_json["fin"] == True:
-					if operation_json["request"] == "write":
-						print(operation_json["result"])
-						self.send_verification()
-
-					else:
-						print("Request erroneo")
-				else:
-					print("DEBE ESPERAR LO FRACCIONADO")
+					print("DEBE ESPERAR LO FRACCIONADO") # OJOOO
 			else:
 				print("Type erroneo")
 		else:
@@ -277,14 +281,15 @@ class Client:
 			self.UDP_socket.close()
 
 
-	def main(self):
+	def main(self, user, password):
 		while(True):
 			self.handshake()
-			self.send_operation()
-			if (self.receive_verification()):
-				self.receive_operation()
+			self.authentication(self, user, password)
+			# self.send_operation()
+			# if (self.receive_verification()):
+			#	self.receive_operation()
 
 
 if __name__ == "__main__":
 	client = Client("127.0.0.1", 8080)
-	client.main()
+	client.main(args.user, args.password)

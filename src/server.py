@@ -8,7 +8,7 @@ from urllib import request
 from pip import main
 from math import sqrt
 
-
+TIMEOUT = 300
 
 
 class Server:
@@ -160,17 +160,25 @@ class Server:
 			print("Type erroneo")
 
 	def recv_request(self):
-		json_to_recv = UDPServer.recvfrom(self.buffer_size)
-		request = json_to_recv[0]
-		server_address_port = json_to_recv[1]
-		req = request.decode()
+		UDPServer.settimeout(TIMEOUT)
+		while True:
+			try:
+				json_to_recv = UDPServer.recvfrom(self.buffer_size)
+				request = json_to_recv[0]
+				server_address_port = json_to_recv[1]
+				req = request.decode()
 
-		request_json = json.loads(req)
+				request_json = json.loads(req)
 
-		if request_json["type"] == "disconnect":
-			self.UDP_socket.close()
-		else:
-			print("RECIBE OPERACION")
+				if request_json["type"] == "disconnect":
+					self.UDP_socket.close()
+					break
+				else:
+					print("RECIBE OPERACION") #OJOOO
+			
+			except:
+				printf("Se agoto el tiempo de espera del servidor")
+				break
 
 	def receive_package(self):
 		json_to_recv = self.UDP_socket.recvfrom(self.buffer_size)
