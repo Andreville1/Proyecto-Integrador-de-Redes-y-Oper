@@ -23,7 +23,7 @@ class Client:
 			family=socket.AF_INET, type=socket.SOCK_DGRAM)
 		self.buffer_size = 128
 		# TODO: put random values for numSeq and numAck
-		self.seq = 0
+		seq = random.randint(0, 100)
 		self.ack = 0
 		self.fin = True
 
@@ -34,7 +34,7 @@ class Client:
 
 			if (permission == '-w'):
 				if(can_write == True):
-					print("llama a metodo de André")
+					# print("llama a metodo de André")
 					self.send_operation(self)
 					rep = False
 				else:
@@ -51,48 +51,75 @@ class Client:
 
 	def authentication(self, user, password):
 
-		seq = random.randint(0, 100)
-		json_to_send ={"seq":seq,"type":"login","fin":True,"username":user,"password":password}
-		msg_to_send = str(json_to_send)
-		# Se encripta
-		self.UDP_socket.sendto(str.encode(msg_to_send), self.address_port)
+		self.seq = self.seq + 1 # 2
+		data_json = {"seq":self.seq,"type":"login","fin":True,"username":user,"password":password}
+		# encrypt
+		data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3)
+		bytesToSend = str.encode(data_json_cifrado)
+		# Envia el login
+		self.UDP_socket.sendto(bytesToSend, self.address_port)
+
+		# msg_to_send = str(json_to_send)
+		# self.UDP_socket.sendto(str.encode(data_json_cifrado), self.address_port)
 
 		no_stop = True
 		while no_stop:
 			self.UDP_socket.settimeout(TIMEOUT)
 			try:
 				# Recibe la confirmacion del servidor
-				# Copia la confirmacion y la direccion
-				confirmation_msg, addr = self.UDP_socket.recvfrom(1024)
-				json_confirmation_msg = json.loads(confirmation_msg)
+				json_msg = self.recv_json(self)
 
-				while(json_confirmation_msg["ack"] != (seq+1)):
-					confirmation_msg, addr = self.UDP_socket.recvfrom(1024)
-					json_confirmation_msg = json.loads(confirmation_msg)
-				
+				# Copia la confirmacion y la direccion
+				# confirmation_msg, addr = self.UDP_socket.recvfrom(1024)
+				# json_confirmation_msg = json.loads(confirmation_msg)
+
+				while(json_msg["seq"] != self.ack_expected): # 12 != 12
+					json_msg = self.recv_json(self)
+				self.ack = json_msg["seq"] # 12
+				self.ack_expected = self.ack + 1 # 13
+
+
 				# Recibe la validation
-				validation_msg, addr = self.UDP_socket.recvfrom(1024)
-				json_validation_msg = json.loads(validation_msg)
+				json_msg = self.recv_json(self)
+
+				# validation_msg, addr = self.UDP_socket.recvfrom(1024)
+				#json_validation_msg = json.loads(validation_msg)
+				
+				while(json_msg["seq"] != self.ack_expected): # 13 != 13
+					json_msg = self.recv_json(self)
+				self.ack = json_msg["seq"] # 13
+				self.ack_expected = self.ack + 1 # 14
+				
 
 				no_stop = False
 
 			except:
-				json_to_send ={"seq":seq,"type":"login","fin":True,"username":user,"password":password}
-				msg_to_send = str(json_to_send)
-				# Se encripta
-				self.UDP_socket.sendto(str.encode(msg_to_send), self.address_port)
+				data_json = {"seq":seq,"type":"login","fin":True,"username":user,"password":password}
+				#encrypt
+				data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3) 
+				bytesToSend = str.encode(data_json_cifrado)
+				# send to server
+				self.UDP_socket.sendto(bytesToSend, self.address_port) 
+				
+				# msg_to_send = str(json_to_send)
+				# self.UDP_socket.sendto(str.encode(msg_to_send), self.address_port)
 
-		if (json_validation_msg["validated"] == True):
-			ack = int(json_validation_msg["seq"]) + 1
-			seq += 1
-			msg_to_server = {"type":"ack","ack":ack,"seq":seq}
-			msg_to_server = str(msg_to_server)
+		if (json_msg["validated"] == True):
+			self.seq = self.seq + 1 # 3
+			data_json = {"type":"ack","ack":self.ack_expected,"seq":self.seq}
+			# encrypt
+			data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3)
+			bytesToSend = str.encode(data_json_cifrado)
 			# Envia la confirmacion de que le llego ser aceptado
-			self.UDP_socket.sendto(str.encode(msg_to_server), self.address_port)
-			self.validate_user_permissions(self, json_validation_msg["canWrite"])
+			self.UDP_socket.sendto(bytesToSend, self.address_port)
+
+			# msg_to_server = str(msg_to_server)
+			# self.UDP_socket.sendto(str.encode(msg_to_server), self.address_port)
+
+			self.validate_user_permissions(self, json_msg["canWrite"])
 		else:
 			print("[Cerrando conexion]: Usuario o contraseña invalida")
-			ack = int(json_validation_msg["seq"]) + 1
+			ack = int(json_msg["seq"]) + 1
 			seq += 1
 			msg_to_server = {"type":"ack","ack":ack,"seq":seq}
 			msg_to_server = str(msg_to_server)
@@ -101,21 +128,23 @@ class Client:
 			self.UDP_socket.close()
 
 	def send_json(self, data_json):
-		
-		json_string = json.dump(data_json)
-		self.cifrado_cesar(json_string, 3)
-		# Se encripta
-		json_to_send = str.encode(json_string)
-
-		# Envia la solicitud de desconexion
-		self.UDP_socket.sendto(json_to_send, self.address_port)
+		# encrypt
+		data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3) # json_string = json.dump(data_json)
+		bytesToSend = str.encode(data_json_cifrado) # self.cifrado_cesar(json_string, 3)
+		# json_to_send = str.encode(json_string)
+		# Envia el json
+		self.UDP_socket.sendto(bytesToSend, self.address_port) # self.UDP_socket.sendto(json_to_send, self.address_port)
 
 	def recv_json(self): 
-		msg_from_server = self.UDP_socket.recvfrom(self.buffer_size)
-		json_server = msg_from_server[0].decode()
-		json_server = self.cifrado_cesar(json_server, 26-3)
-		print(json_server)
-		return json_server
+		bytes_recv = self.UDP_socket.recvfrom(1024)
+		message_recv = bytes_recv[0]
+		addr = bytes_recv[1]
+		# decrypt
+		msg = message_recv.decode()
+		msg_decrypt = self.cifrado_cesar(msg, 26-3)
+		json_msg = json.loads(msg_decrypt)
+		
+		return json_msg
 
 	def option_quit(self):
 		data_json = {"seq": self.seq, "type": "disconnect"}
@@ -136,20 +165,27 @@ class Client:
 		self.validate_user_permissions(self, True)
 
 	def send_verification(self):
-		data_json = {"type": "ack", "ack": self.ack, "seq": self.seq}
+		data_json = {"type": "ack", "ack": self.ack_expected, "seq": self.seq}
 		self.send_json(data_json)
 
 	def receive_verification(self):
 		#TODO: refactor this:
 		valid = False
-		msg_from_server = self.UDP_socket.recvfrom(self.buffer_size)
-		verification = msg_from_server[0].decode()
-		serverAddressPort = msg_from_server[1].decode()
-		verification_json = json.loads(verification)
 
-		if verification_json["type"] == "ack":
-			if verification_json["ack"] == self.ack:
-				if verification_json["seq"] == self.seq:
+		bytes_recv = self.UDP_socket.recvfrom(self.buffer_size)
+		message_recv = bytes_recv[0]
+		serverAddressPort = bytes_recv[1]
+		# decrypt
+		msg = message_recv.decode()
+		msg_decrypt = self.cifrado_cesar(msg, 26-3)
+		json_msg = json.loads(msg_decrypt) # verification_json = json.loads(verification)
+
+		if json_msg["type"] == "ack":
+			if json_msg["ack"] == self.seq + 1: # 5 = 5 | 6 = 6
+				if json_msg["seq"] == self.ack_expected: # 14 = 14 | 15 = 15
+					self.ack = json_msg["seq"] # 14 | 15
+					self.ack_expected = self.ack + 1 # 15 | 16
+
 					valid = True
 				else:
 					print("Seq erroneo")
@@ -166,10 +202,12 @@ class Client:
 			valid = self.receive_verification(self)
 
 	def send_operation(self):
+		self.seq = self.seq + 1 # 4 | 5
 		operation = input("Ingrese la operacion: ")
 		data_json = {"seq": self.seq, "type": "request",
                     "fin": self.fin, "request": "write", "operation": operation}
-		json_string = json.dump(data_json)
+		
+		json_string = json.dumps(data_json)
 		
 		if (len(json_string.encode('utf-8')) <= 128): # Lo envia de una vez
 			self.send_json(data_json)
@@ -198,20 +236,36 @@ class Client:
 			self.verify()
 
 	def recv_operation(self):
+
+		# recv from server
+		bytes_recv = self.UDP_socket.recvfrom(self.buffer_size)
+		message_recv = bytes_recv[0]
+		# decrypt
+		msg = message_recv.decode()
+		msg_decrypt = self.cifrado_cesar(msg, 26-3)
+		json_msg = json.loads(msg_decrypt)
+
 		#TODO: Refactor this:
-		msg_from_server = self.UDP_socket.recvfrom(self.buffer_size)
-		operation = msg_from_server[0].decode()
-		serverAddressPort = msg_from_server[1].decode()
+		bytes_recv = self.UDP_socket.recvfrom(self.buffer_size) # msg_from_server = self.UDP_socket.recvfrom(self.buffer_size)
+		message_recv = bytes_recv[0] # operation = msg_from_server[0].decode()
+		serverAddressPort = bytes_recv[1].decode() # serverAddressPort = msg_from_server[1].decode()
+		# encrypt
+		msg = message_recv.decode()
+		msg_decrypt = self.cifrado_cesar(msg, 26-3)
+		json_msg = json.loads(msg_decrypt) # operation_json = json.loads(operation) 
+		if json_msg["seq"] == self.ack_expected: # 16 = 16 | 17 = 17
+			if json_msg["type"] == "request":
+				if json_msg["fin"] == True:
+					if json_msg["request"] == "write":
+						self.ack = json_msg["seq"] # 16 | 17
+						self.ack_expected = self.ack + 1 # 17 | 18
+						self.seq = self + 1 # 6 | 7
 
-		operation_json = json.loads(operation)
-
-		if operation_json["seq"] == self.seq:
-			if operation_json["type"] == "request":
-				if operation_json["fin"] == True:
-					if operation_json["request"] == "write":
-						print(operation_json["result"])
+						print(json_msg["result"])
+						# Envia la verificacion que le llego bien el resultado
 						self.send_verification()
-						self.send_request(self, operation_json)
+						
+						self.send_request(self, json_msg)
 					else:
 						print("Request erroneo")
 				else:
@@ -237,7 +291,7 @@ class Client:
 
 	def handshake(self):
 		# create message syn
-		data_json = {"type": "syn", "seq": self.seq}
+		data_json = {"type": "syn", "seq": self.seq} #seq = 0
 		# encrypt
 		data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3)
 		bytesToSend = str.encode(data_json_cifrado)
@@ -255,14 +309,14 @@ class Client:
 		json_msg = json.loads(msg_decrypt)
 
 		# self.ack = server.seq
-		self.ack = json_msg["seq"]
+		self.ack = json_msg["seq"] # 10
 		# self.ack_exp = server.seq + 1
-		self.ack_expected = json_msg["seq"] + 1
-		self.seq = self.seq + 1
+		self.ack_expected = json_msg["seq"] + 1 # 11
 
 		print(self.seq, self.ack, self.ack_expected)
 
 		#create messagr ack
+		self.seq = self.seq + 1 # 1
 		data_json = {"type": "ack", "ack": self.ack_expected, "seq": self.seq}
 		# encrypt
 		data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3)
@@ -283,8 +337,8 @@ class Client:
 		if int(json_msg["seq"]) == self.ack_expected:
 			# port = server_port
 			self.address_port = (self.ip, json_msg["port"])
-			self.ack = json_msg["seq"]
-			self.ack_expected = self.ack + 1
+			self.ack = json_msg["seq"] # 11
+			self.ack_expected = self.ack + 1 # 12
 			print("recv ack with port from server")
 
 		else:
