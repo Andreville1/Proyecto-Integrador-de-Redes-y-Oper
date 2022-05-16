@@ -24,22 +24,20 @@ class Server:
 		self.ack = 0
 		self.fin = True
 
-# taken from: https://www.geeksforgeeks.org/caesar-cipher-in-cryptography/
+# taken from: https://www.pythonpool.com/caesar-cipher-python/
 	def cifrado_cesar(self, message, shift):
-		result = ""
-
-		for index in range(len(message)):
-			char = message[index]
-
-			# Encrypt uppercase characters
-			if (char.isupper()):
-				result += chr((ord(char) + shift-65) % 26 + 65)
-
-			# Encrypt lowercase characters
+		encryp_str = ""
+		for element in message:
+			if element.isupper():
+				temp = 65 + ((ord(element) - 65 + shift) % 26)
+				encryp_str = encryp_str + chr(temp)
+			elif element.islower():
+				temp = 97 + ((ord(element) - 97 + shift) % 26)
+				encryp_str = encryp_str + chr(temp)
 			else:
-				result += chr((ord(char) + shift - 97) % 26 + 97)
+				encryp_str = encryp_str + element
+		return encryp_str
 
-		return result
 	
 	def credential_validation(self, user, password):
 		valid_user = False
@@ -190,7 +188,56 @@ class Server:
 
 		return operation_json, server_address_port
 
+	def handshake(self):
+		#recv from client
+		bytes_recv = self.UDP_socket.recvfrom(self.buffer_size)
+		message_recv = bytes_recv[0]
+		address = bytes_recv[1]
+		msg = message_recv.decode()
+		msg_decrypt = self.cifrado_cesar(msg, 26-3)
+		json_msg = json.loads(msg_decrypt)
 
+		print("recv syn from client")
+		# numACK = clientSeq
+		self.ack = int(json_msg["seq"])
+		self.ack_expected = self.ack + 1
+
+		# armar mensaje ack
+		data_json = {"type": "ack", "ack": self.ack_expected, "seq": self.seq}
+		# encrypt
+		msg_to_send = self.cifrado_cesar(json.dumps(data_json), 3)
+
+		bytesToSend = str.encode(msg_to_send)
+		# send to client
+		self.UDP_socket.sendto(bytesToSend, address)
+		print("sent ack to client")
+
+		#recv from client
+		bytes_recv = self.UDP_socket.recvfrom(self.buffer_size)
+		message_recv = bytes_recv[0]
+		address = bytes_recv[1]
+		msg = message_recv.decode()
+		msg_decrypt = self.cifrado_cesar(msg, 26-3)
+		json_msg = json.loads(msg_decrypt)
+
+		if int(json_msg["seq"]) == self.ack_expected:
+			self.ack = json_msg["seq"]
+			self.ack_expected = self.ack + 1
+			self.seq = self.seq + 1
+			#send to client
+			# armar mensaje ack
+			data_json = {"type": "ack", "ack": self.ack_expected,
+                            "seq": self.seq, "port": address[1]}
+			#encrypt
+			msg_to_send = self.cifrado_cesar(json.dumps(data_json), 3)
+			bytesToSend = str.encode(msg_to_send)
+			# send to client
+			self.UDP_socket.sendto(bytesToSend, address)
+			print("sent ack with port to client")
+
+		else:
+			print("No se pudo establecer conexión")
+			self.UDP_socket.close()
 	def main(self):
 		while True:
 			self.handshake()

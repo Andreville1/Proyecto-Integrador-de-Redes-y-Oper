@@ -239,46 +239,58 @@ class Client:
 		# create message syn
 		data_json = {"type": "syn", "seq": self.seq}
 		# encrypt
-		data_json_cifrado = self.cifrado_cesar(str(data_json), 3)
+		data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3)
 		bytesToSend = str.encode(data_json_cifrado)
 		# send to server
 		self.UDP_socket.sendto(bytesToSend, self.address_port)
+		print("sent syn to server")
+		print(self.seq, self.ack, self.ack_expected)
 
 		# recv from server
 		msg_from_server = self.UDP_socket.recvfrom(self.buffer_size)
+		message_recv = msg_from_server[0]
 		# decrypt
-		msg = self.decifrado_cesar(msg_from_server[0].decode(), 26-3)
+		msg = message_recv.decode()
+		msg_decrypt = self.cifrado_cesar(msg, 26-3)
+		json_msg = json.loads(msg_decrypt)
 
 		# self.ack = server.seq
-		self.ack = msg["seq"]
+		self.ack = json_msg["seq"]
 		# self.ack_exp = server.seq + 1
-		self.ack_expected = msg["seq"] + 1
-		# self.seq +1
-		self.seq += 1
+		self.ack_expected = json_msg["seq"] + 1
+		self.seq = self.seq + 1
 
-		# create messagr ack
-		data_json = {"type": "ack", "ack": self.ack, "seq": self.seq}
+		print(self.seq, self.ack, self.ack_expected)
+
+		#create messagr ack
+		data_json = {"type": "ack", "ack": self.ack_expected, "seq": self.seq}
 		# encrypt
-		data_json_cifrado = self.cifrado_cesar(data_json, 3)
+		data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3)
 		bytesToSend = str.encode(data_json_cifrado)
 		# send to server
 		self.UDP_socket.sendto(bytesToSend, self.address_port)
+		print("sent ack to server")
 
 		# recv from server
-		msg_from_server = self.UDP_socket.recvfrom(self.buffer_size)
+		bytes_recv = self.UDP_socket.recvfrom(self.buffer_size)
+		message_recv = bytes_recv[0]
 		# decrypt
-		msg = self.cifrado_cesar(msg_from_server[0].decode(), 26-3)
+		msg = message_recv.decode()
+		msg_decrypt = self.cifrado_cesar(msg, 26-3)
+		json_msg = json.loads(msg_decrypt)
+		print(json_msg)
 		# check if server_seq = ack_expected
-		if msg["seq"] == self.ack_expected:
+		if int(json_msg["seq"]) == self.ack_expected:
 			# port = server_port
-			self.address_port = (self.ip, msg["port"])
-			# ack_expected + 1
-			self.ack_expected += 1
-			# ack = server_seq
-			ack = msg["seq"]
+			self.address_port = (self.ip, json_msg["port"])
+			self.ack = json_msg["seq"]
+			self.ack_expected = self.ack + 1
+			print("recv ack with port from server")
+
 		else:
 			print("couldnt establish connection")
 			self.UDP_socket.close()
+
 
 
 	def main(self, user, password):
