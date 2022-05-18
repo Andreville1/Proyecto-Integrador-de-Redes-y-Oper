@@ -5,8 +5,6 @@ import random
 import socket
 import sys
 
-from pip import main
-
 TIMEOUT = 2
 
 # Lee desde consola los argumentos de manera desordenada
@@ -59,7 +57,8 @@ class Client:
 		#print("Autentificacion mando a login en seq un: ", self.seq)
 		data_json = {"seq":self.seq,"type":"login","fin":True,"username":user,"password":password}
 		# encrypt
-		data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3)
+		data_json_cifrado = self.cypher(json.dumps(data_json)) # data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3)
+		
 		bytesToSend = str.encode(data_json_cifrado)
 		# Envia el login
 		self.UDP_socket.sendto(bytesToSend, self.address_port)
@@ -73,7 +72,6 @@ class Client:
 			try:
 				# Recibe la confirmacion del servidor
 				json_msg = self.recv_json()
-
 				# Copia la confirmacion y la direccion
 				# confirmation_msg, addr = self.UDP_socket.recvfrom(1024)
 				# json_confirmation_msg = json.loads(confirmation_msg)
@@ -103,7 +101,7 @@ class Client:
 			except:
 				data_json = {"seq":self.seq,"type":"login","fin":True,"username":user,"password":password}
 				#encrypt
-				data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3) 
+				data_json_cifrado = self.cypher(json.dumps(data_json)) # data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3) 
 				bytesToSend = str.encode(data_json_cifrado)
 				# send to server
 				self.UDP_socket.sendto(bytesToSend, self.address_port) 
@@ -115,7 +113,7 @@ class Client:
 			self.seq = self.seq + 1 # 3
 			data_json = {"type":"ack","ack":self.ack_expected,"seq":self.seq}
 			# encrypt
-			data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3)
+			data_json_cifrado = self.cypher(json.dumps(data_json)) # data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3)
 			bytesToSend = str.encode(data_json_cifrado)
 			# Envia la confirmacion de que le llego ser aceptado
 			self.UDP_socket.sendto(bytesToSend, self.address_port)
@@ -133,7 +131,7 @@ class Client:
 			self.seq = self.seq + 1
 			data_json = {"type":"ack","ack":self.ack_expected,"seq":self.seq}
 			# encrypt
-			data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3)
+			data_json_cifrado = self.cypher(json.dumps(data_json)) # data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3)
 			bytesToSend = str.encode(data_json_cifrado)
 			self.UDP_socket.sendto(bytesToSend, self.address_port)
 			# Envia la confirmacion de que le llego no ser aceptado
@@ -142,8 +140,8 @@ class Client:
 
 	def send_json(self, data_json):
 		# encrypt
-		data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3) # json_string = json.dump(data_json)
-		bytesToSend = str.encode(data_json_cifrado) # self.cifrado_cesar(json_string, 3)
+		data_json_cifrado = self.cypher(json.dumps(data_json)) # data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3) # json_string = json.dump(data_json)
+		bytesToSend = str.encode(data_json_cifrado)
 		# json_to_send = str.encode(json_string)
 		# Envia el json
 		self.UDP_socket.sendto(bytesToSend, self.address_port) # self.UDP_socket.sendto(json_to_send, self.address_port)
@@ -154,7 +152,7 @@ class Client:
 		addr = bytes_recv[1]
 		# decrypt
 		msg = message_recv.decode()
-		msg_decrypt = self.cifrado_cesar(msg, 26-3)
+		msg_decrypt = self.decypher(msg) # msg_decrypt = self.cifrado_cesar(msg, 26-3)
 		json_msg = json.loads(msg_decrypt)
 		
 		return json_msg
@@ -194,7 +192,7 @@ class Client:
 		serverAddressPort = bytes_recv[1]
 		# decrypt
 		msg = message_recv.decode()
-		msg_decrypt = self.cifrado_cesar(msg, 26-3)
+		msg_decrypt = self.decypher(msg) # msg_decrypt = self.cifrado_cesar(msg, 26-3)
 		json_msg = json.loads(msg_decrypt) # verification_json = json.loads(verification)
 
 		#print("ESTO ES EL ACK",json_msg["ack"], "Y SE ESPERA", self.seq + 1 )
@@ -265,7 +263,7 @@ class Client:
 		serverAddressPort = bytes_recv[1] # serverAddressPort = msg_from_server[1].decode()
 		# encrypt
 		msg = message_recv.decode()
-		msg_decrypt = self.cifrado_cesar(msg, 26-3)
+		msg_decrypt = self.decypher(msg) # msg_decrypt = self.cifrado_cesar(msg, 26-3)
 		json_msg = json.loads(msg_decrypt) # operation_json = json.loads(operation) 
 		if json_msg["seq"] == self.ack_expected: # 16 = 16 | 17 = 17
 			if json_msg["type"] == "request":
@@ -320,14 +318,12 @@ class Client:
 		# create message syn
 		data_json = {"type": "syn", "seq": self.seq}
 		# encrypt
-		print(json.dumps(data_json))
-		print(type(json.dumps(data_json)))
 		data_json_cifrado = self.cypher(json.dumps(data_json))
 		bytesToSend = str.encode(data_json_cifrado)
 		# send to server
 		self.UDP_socket.sendto(bytesToSend, self.address_port)
-		print("sent syn to server")
-		print(self.seq, self.ack, self.ack_expected)
+		# print("sent syn to server")
+		# print(self.seq, self.ack, self.ack_expected)
 
 		# recv from server
 		msg_from_server = self.UDP_socket.recvfrom(self.buffer_size)
@@ -341,34 +337,36 @@ class Client:
 		self.ack = json_msg["seq"]
 		# self.ack_exp = server.seq + 1
 		self.ack_expected = json_msg["seq"] + 1
-		self.seq = self.seq + 1
 
-		print(self.seq, self.ack, self.ack_expected)
+		# print(self.seq, self.ack, self.ack_expected)
 
 		#create messagr ack
+		self.seq = self.seq + 1
 		data_json = {"type": "ack", "ack": self.ack_expected, "seq": self.seq}
 		# encrypt
 		data_json_cifrado = self.cypher(json.dumps(data_json))
 		bytesToSend = str.encode(data_json_cifrado)
 		# send to server
 		self.UDP_socket.sendto(bytesToSend, self.address_port)
-		print("sent ack to server")
+		# print("sent ack to server")
 
 		# recv from server
 		bytes_recv = self.UDP_socket.recvfrom(self.buffer_size)
 		message_recv = bytes_recv[0]
+		self.address_port = bytes_recv[1]
 		# decrypt
 		msg = message_recv.decode()
 		msg_decrypt = self.decypher(msg)
 		json_msg = json.loads(msg_decrypt)
-		print(json_msg)
+		# print(json_msg)
 		# check if server_seq = ack_expected
+
 		if int(json_msg["seq"]) == self.ack_expected:
 			# port = server_port
-			self.address_port = (self.ip, json_msg["port"])
+			# self.address_port = (self.ip, json_msg["port"]) NUEVO
 			self.ack = json_msg["seq"]
 			self.ack_expected = self.ack + 1
-			print("recv ack with port from server")
+			# print("recv ack with port from server")
 
 		else:
 			print("couldnt establish connection")
