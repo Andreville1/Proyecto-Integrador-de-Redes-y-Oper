@@ -315,6 +315,7 @@ class Client:
 		return result
 
 	def handshake(self):
+		print("Estoy enviando 1 en: ", self.address_port)
 		# create message syn
 		data_json = {"type": "syn", "seq": self.seq}
 		# encrypt
@@ -339,6 +340,7 @@ class Client:
 		self.ack_expected = json_msg["seq"] + 1
 
 		# print(self.seq, self.ack, self.ack_expected)
+		print("Estoy recibiendo 4 ", self.address_port)
 
 		#create messagr ack
 		self.seq = self.seq + 1
@@ -349,6 +351,7 @@ class Client:
 		# send to server
 		self.UDP_socket.sendto(bytesToSend, self.address_port)
 		# print("sent ack to server")
+		print("Estoy enviando 5 ", self.address_port)
 
 		# recv from server
 		bytes_recv = self.UDP_socket.recvfrom(self.buffer_size)
@@ -360,10 +363,10 @@ class Client:
 		json_msg = json.loads(msg_decrypt)
 		# print(json_msg)
 		# check if server_seq = ack_expected
-
+		print("Estoy recibiendo 8 ", self.address_port)
 		if int(json_msg["seq"]) == self.ack_expected:
 			# port = server_port
-			# self.address_port = (self.ip, json_msg["port"]) NUEVO
+			self.address_port = (self.ip, json_msg["port"])
 			self.ack = json_msg["seq"]
 			self.ack_expected = self.ack + 1
 			# print("recv ack with port from server")
@@ -372,6 +375,7 @@ class Client:
 			print("couldnt establish connection")
 			self.UDP_socket.close()
 
+		print("Ahora voy a enviar desde", self.address_port)
 
 	def main(self, user, password):
 		#print("Estoy aquii", user, password)

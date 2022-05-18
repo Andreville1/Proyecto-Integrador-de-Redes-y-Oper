@@ -27,6 +27,8 @@ class Server:
 		self.ack = 0
 		self.fin = True
 
+		self.new_address_port = (0,0)
+
 # taken from: https://www.pythonpool.com/caesar-cipher-python/
 	def cifrado_cesar(self, message, shift):
 		encryp_str = ""
@@ -45,7 +47,7 @@ class Server:
 	def credential_validation(self, user, password):
 		valid_user = False
 		can_write = False
-		with open('C:/Users/Jaffet A/Desktop/users.json') as file:
+		with open('users.json') as file:
 			data = json.load(file)
 			for users in data['users']:
 				if (users['username'] == user):
@@ -87,7 +89,7 @@ class Server:
 		msg_to_send = self.cypher(json.dumps(data_json)) # msg_to_send = self.cifrado_cesar(json.dumps(data_json), 3)
 		bytesToSend = str.encode(msg_to_send)
 		# Envia que si fue validado o no
-		self.UDP_socket.sendto(bytesToSend, address) # self.UDP_socket.sendto(str.encode(smg_to_send), address)
+		self.UDP_socket_paso_mensajes.sendto(bytesToSend, address)
 
 		# Recibe la verificaion de que le llego el validado
 		json_msg, address = self.recv_json()
@@ -145,7 +147,7 @@ class Server:
 		msg_to_send = self.cypher(json.dumps(data_json)) # msg_to_send = self.cifrado_cesar(json.dumps(data_json), 3) 
 		bytesToSend = str.encode(msg_to_send) # json_to_send = str.encode(json_string)
 		# send to client	
-		self.UDP_socket.sendto(bytesToSend, address) # json_to_send, serverAddressPort
+		self.UDP_socket_paso_mensajes.sendto(bytesToSend, address) # json_to_send, serverAddressPort
 
 	def send_result(self, address, result, operation):
 		data_json = {"seq": self.seq, "type": "request", "fin": self.fin,
@@ -154,10 +156,10 @@ class Server:
 		msg_to_send = self.cypher(json.dumps(data_json)) # msg_to_send = self.cifrado_cesar(json.dumps(data_json), 3)
 		bytesToSend = str.encode(msg_to_send) # json_to_send = str.encode(json_string)
 		# Envia el resultado
-		self.UDP_socket.sendto(bytesToSend, address) # self.UDP_socket.sendto(json_to_send, serverAddressPort)
+		self.UDP_socket_paso_mensajes.sendto(bytesToSend, address)
 
 	def recv_verification(self):
-		bytes_recv = self.UDP_socket.recvfrom(self.buffer_size) # json_to_recv = self.UDP_socket.recvfrom(self.buffer_size)
+		bytes_recv = self.UDP_socket_paso_mensajes.recvfrom(self.buffer_size)
 		message_recv = bytes_recv[0] # verification = json_to_recv[0]
 		address = bytes_recv[1] # server_address_port = json_to_recv[1]
 		msg = message_recv.decode() # veri = verification.decode()
@@ -179,10 +181,10 @@ class Server:
 			print("Type erroneo")
 
 	def recv_request(self):
-		self.UDP_socket.settimeout(TIMEOUT)
+		self.UDP_socket_paso_mensajes.settimeout(TIMEOUT)
 		while True:
 			try:
-				bytes_recv = self.UDP_socket.recvfrom(self.buffer_size) # json_to_recv = UDPServer.recvfrom(self.buffer_size)
+				bytes_recv = self.UDP_socket_paso_mensajes.recvfrom(self.buffer_size) # json_to_recv = UDPServer.recvfrom(self.buffer_size)
 				message_recv = bytes_recv[0] # request = json_to_recv[0]
 				address = bytes_recv[1] # server_address_port = json_to_recv[1]
 				msg = message_recv.decode() # req = request.decode()
@@ -198,10 +200,10 @@ class Server:
 				msg_to_send = self.cypher(json.dumps(data_json)) # msg_to_send = self.cifrado_cesar(json.dumps(data_json), 3)
 				bytesToSend = str.encode(msg_to_send)
 				# Envia la confirmacion de que va a cerrar
-				self.UDP_socket.sendto(bytesToSend, address)
+				self.UDP_socket_paso_mensajes.sendto(bytesToSend, address)
 
 				if json_msg["type"] == "disconnect":
-					self.UDP_socket.close()
+					self.UDP_socket_paso_mensajes.close()
 					break
 				else:
 					print("RECIBE OPERACION") #OJOOO
@@ -212,10 +214,7 @@ class Server:
 
 	def recv_json(self):
 		# recv from client
-		#print("ESTOY EN RECIV JSON")
-		msg_from_server = self.UDP_socket.recvfrom(self.buffer_size)
-		#bytes_recv = self.UDP_socket.recvfrom(self.buffer_size) # json_to_recv = self.UDP_socket.recvfrom(self.buffer_size)
-		#print("RECIVI EL RECIV JSON")
+		msg_from_server = self.UDP_socket_paso_mensajes.recvfrom(self.buffer_size)
 		message_recv = msg_from_server[0] # operation = json_to_recv[0]
 		address = msg_from_server[1] # server_address_port = json_to_recv[1]
 		msg = message_recv.decode() # oper = operation.decode()
@@ -250,6 +249,7 @@ class Server:
 		return result
 
 	def handshake(self):
+		print("Original ", self.address_port)
 		# Vincula direccion e IP
 		self.UDP_socket.bind(self.address_port)
 
@@ -266,6 +266,8 @@ class Server:
 		self.ack = int(json_msg["seq"])
 		self.ack_expected = self.ack + 1
 
+		print("Estoy recibiendo 2 ", self.address_port)
+
 		# armar mensaje ack
 		data_json = {"type": "ack", "ack": self.ack_expected, "seq": self.seq}
 		# encrypt
@@ -275,7 +277,8 @@ class Server:
 		# send to client
 		self.UDP_socket.sendto(bytesToSend, address)
 		# print("sent ack to client")
-
+		
+		print("Estoy enviando 3", self.address_port)
 		#recv from client
 		bytes_recv = self.UDP_socket.recvfrom(self.buffer_size)
 		message_recv = bytes_recv[0]
@@ -284,6 +287,8 @@ class Server:
 		msg_decrypt = self.decypher(msg)
 		json_msg = json.loads(msg_decrypt)
 
+		print("Estoy recibiendo 6" , self.address_port)
+
 		if int(json_msg["seq"]) == self.ack_expected:
 			self.ack = json_msg["seq"]
 			self.ack_expected = self.ack + 1
@@ -291,7 +296,7 @@ class Server:
 			#send to client
 			# armar mensaje ack
 			data_json = {"type": "ack", "ack": self.ack_expected,
-                            "seq": self.seq, "port": address[1]}
+                            "seq": self.seq, "port": 4040} #address[1]
 			#encrypt
 			msg_to_send = self.cypher(json.dumps(data_json))
 			bytesToSend = str.encode(msg_to_send)
@@ -299,13 +304,18 @@ class Server:
 			# self.address_port = address NUEVO
 			self.UDP_socket.sendto(bytesToSend, address) # self.address_port
 			# print("sent ack with port to client")
-			# self.UDP_socket_paso_mensajes.bind(self.address_port) NUEVO
+			print("Estoy enviando 7 ", self.address_port)
+			self.new_address_port = (self.ip, 4040) # address[1]
+			self.UDP_socket.close()
+			self.UDP_socket_paso_mensajes.bind(self.new_address_port)
+			print("Ahora voy a escuchar en ", self.new_address_port)
+			
 		else:
 			print("No se pudo establecer conexión")
 			self.UDP_socket.close()
 
 	def main(self):
-		while True:
+		# while True:
 			self.handshake()
 			#print("SALIO DEL HAND")
 			self.login()
