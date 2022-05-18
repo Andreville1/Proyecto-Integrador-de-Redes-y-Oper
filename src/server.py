@@ -16,10 +16,6 @@ class Server:
 	def __init__(self, address, port):
 		self.ip = address
 		self.address_port = (address, port)
-		self.UDP_socket = socket.socket(
-			family=socket.AF_INET, type=socket.SOCK_DGRAM)
-		self.UDP_socket_paso_mensajes = socket.socket(
-                    family=socket.AF_INET, type=socket.SOCK_DGRAM)
 		self.buffer_size = 128
 		# TODO: put random values for numSeq and numAck
 		self.seq = 10 #seq = random.randint(0, 100)
@@ -249,6 +245,10 @@ class Server:
 		return result
 
 	def handshake(self):
+		self.UDP_socket = socket.socket(
+			family=socket.AF_INET, type=socket.SOCK_DGRAM)
+		self.UDP_socket_paso_mensajes = socket.socket(
+                    family=socket.AF_INET, type=socket.SOCK_DGRAM)
 		print("Original ", self.address_port)
 		# Vincula direccion e IP
 		self.UDP_socket.bind(self.address_port)
@@ -315,7 +315,7 @@ class Server:
 			self.UDP_socket.close()
 
 	def main(self):
-		# while True:
+		while True:
 			self.handshake()
 			#print("SALIO DEL HAND")
 			self.login()
