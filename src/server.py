@@ -226,30 +226,24 @@ class Server:
 		return json_msg, address
 
 	def handshake(self):
-		# Vincula la direccion e IP
-		self.UDP_socket.bind(self.address_port)
-
 		#recv from client
-		#print("ESTO ES ADDRES PORT EN SERVER",self.address_port)
 		bytes_recv = self.UDP_socket.recvfrom(self.buffer_size)
 		message_recv = bytes_recv[0]
 		address = bytes_recv[1]
 		msg = message_recv.decode()
-		msg_decrypt = self.cifrado_cesar(msg, 26-3)
+		msg_decrypt = self.decypher(msg)
+		print(msg_decrypt)
 		json_msg = json.loads(msg_decrypt)
 
-		#print("ESTO ES ADDRES 1 EN SERVER", address)
 		print("recv syn from client")
 		# numACK = clientSeq
-		self.ack = int(json_msg["seq"]) # 0
-		self.ack_expected = self.ack + 1 # 1
+		self.ack = int(json_msg["seq"])
+		self.ack_expected = self.ack + 1
 
-		#print("ESTO ES EL HANDSHAKE")
-		#print("seq y ack expected: ", self.seq, self.ack_expected)
 		# armar mensaje ack
-		data_json = {"type": "ack", "ack": self.ack_expected, "seq": self.seq} # seq = 10
+		data_json = {"type": "ack", "ack": self.ack_expected, "seq": self.seq}
 		# encrypt
-		msg_to_send = self.cifrado_cesar(json.dumps(data_json), 3)
+		msg_to_send = self.cypher(json.dumps(data_json))
 
 		bytesToSend = str.encode(msg_to_send)
 		# send to client
@@ -260,31 +254,28 @@ class Server:
 		bytes_recv = self.UDP_socket.recvfrom(self.buffer_size)
 		message_recv = bytes_recv[0]
 		address = bytes_recv[1]
-		#print("ESTO ES ADDRES 2 EN SERVER",address)
 		msg = message_recv.decode()
-		msg_decrypt = self.cifrado_cesar(msg, 26-3)
+		msg_decrypt = self.decypher(msg)
 		json_msg = json.loads(msg_decrypt)
 
-		#print("ESTO ES EL HANDSHAKE IFF")
-		#print("seq y ack expected: ", json_msg["seq"], self.ack_expected)
-		if int(json_msg["seq"]) == self.ack_expected: # 1 = 1
-			self.ack = json_msg["seq"] # 1
-			self.ack_expected = self.ack + 1 # 2
-			self.seq = self.seq + 1 # 11
+		if int(json_msg["seq"]) == self.ack_expected:
+			self.ack = json_msg["seq"]
+			self.ack_expected = self.ack + 1
+			self.seq = self.seq + 1
 			#send to client
 			# armar mensaje ack
-			#print("ESTO ES EL HANDSHAKE DENTRO DEL IF ANTES DE MANDAR EL PAQUETE")
-			#print("ack expected QUE ES EL ACK y SEQ: ", self.ack_expected, self.seq)
 			data_json = {"type": "ack", "ack": self.ack_expected,
                             "seq": self.seq, "port": address[1]}
 			#encrypt
-			msg_to_send = self.cifrado_cesar(json.dumps(data_json), 3)
+			msg_to_send = self.cypher(json.dumps(data_json))
 			bytesToSend = str.encode(msg_to_send)
 			# send to client
-			self.UDP_socket.sendto(bytesToSend, address)
+			self.address_port = address
+			print(self.address_port)
+			print(address)
+			self.UDP_socket.sendto(bytesToSend, self.address_port)
 			print("sent ack with port to client")
-			
-			
+			self.UDP_socket_paso_mensajes.bind(self.address_port)
 		else:
 			print("No se pudo establecer conexión")
 			self.UDP_socket.close()

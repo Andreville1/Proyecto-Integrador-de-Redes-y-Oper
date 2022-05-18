@@ -21,9 +21,11 @@ class Client:
 		self.address_port = (address, port)
 		self.UDP_socket = socket.socket(
 			family=socket.AF_INET, type=socket.SOCK_DGRAM)
+		self.UDP_socket_paso_mensajes = socket.socket(
+                    family=socket.AF_INET, type=socket.SOCK_DGRAM)
 		self.buffer_size = 128
-		# TODO: put random values for numSeq and numAck
-		self.seq = 0#random.randint(0, 100)
+		# TODO: put random values for numSeq and numAck 
+		self.seq = 0 #random.randint(0, 999) 
 		self.ack = 0
 		self.ack_expected = 0
 		self.fin = True
@@ -289,30 +291,41 @@ class Client:
 		else:
 			print("Seq erroneo")
 
-# taken from: https://www.pythonpool.com/caesar-cipher-python/
-	def cifrado_cesar(self, message, shift):
-		encryp_str = ""
-		for element in message:
-			if element.isupper():
-				temp = 65 + ((ord(element) - 65 + shift) % 26)
-				encryp_str = encryp_str + chr(temp)
-			elif element.islower():
-				temp = 97 + ((ord(element) - 97 + shift) % 26)
-				encryp_str = encryp_str + chr(temp)
-			else:
-				encryp_str = encryp_str + element
-		return encryp_str
+# taken from: https://stackoverflow.com/questions/58616651/struggling-with-ascii-loop-for-caesar-cipher
+	def cypher(self, string):
+		offset_value = 3
+		range_ = list(range(ord('\0'), ord('}')+1))
+		min_val, max_val = range_[0], range_[-1]
+		diff_plus_1 = (max_val - min_val) + 1
+		result = ""
+		for i in range(len(string)):
+			char = string[i]
+			result += chr((((ord(char) - min_val) + offset_value) %
+                            diff_plus_1) + min_val)
+		return result
+
+	def decypher(self, string):
+		offset_value = -3
+		range_ = list(range(ord('\0'), ord('}')+1))
+		min_val, max_val = range_[0], range_[-1]
+		diff_plus_1 = (max_val - min_val) + 1
+		result = ""
+		for i in range(len(string)):
+			char = string[i]
+			result += chr((((ord(char) - min_val) + offset_value) %
+                            diff_plus_1) + min_val)
+		return result
 
 	def handshake(self):
 		# create message syn
-		data_json = {"type": "syn", "seq": self.seq} #seq = 0
+		data_json = {"type": "syn", "seq": self.seq}
 		# encrypt
-		data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3)
+		print(json.dumps(data_json))
+		print(type(json.dumps(data_json)))
+		data_json_cifrado = self.cypher(json.dumps(data_json))
 		bytesToSend = str.encode(data_json_cifrado)
 		# send to server
-		#print("ESTO ES ADDRES PORT EN CLIENTE",self.address_port)
 		self.UDP_socket.sendto(bytesToSend, self.address_port)
-		#print("ESTO ES ADDRES PORT EN CLIENTE 22",self.address_port)
 		print("sent syn to server")
 		print(self.seq, self.ack, self.ack_expected)
 
@@ -321,21 +334,21 @@ class Client:
 		message_recv = msg_from_server[0]
 		# decrypt
 		msg = message_recv.decode()
-		msg_decrypt = self.cifrado_cesar(msg, 26-3)
+		msg_decrypt = self.decypher(msg)
 		json_msg = json.loads(msg_decrypt)
 
 		# self.ack = server.seq
-		self.ack = json_msg["seq"] # 10
+		self.ack = json_msg["seq"]
 		# self.ack_exp = server.seq + 1
-		self.ack_expected = json_msg["seq"] + 1 # 11
+		self.ack_expected = json_msg["seq"] + 1
+		self.seq = self.seq + 1
 
-		#print("RECIVE UN  seq: ", self.seq, "expected es: ", self.ack_expected)
+		print(self.seq, self.ack, self.ack_expected)
 
 		#create messagr ack
-		self.seq = self.seq + 1 # 1
 		data_json = {"type": "ack", "ack": self.ack_expected, "seq": self.seq}
 		# encrypt
-		data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3)
+		data_json_cifrado = self.cypher(json.dumps(data_json))
 		bytesToSend = str.encode(data_json_cifrado)
 		# send to server
 		self.UDP_socket.sendto(bytesToSend, self.address_port)
@@ -344,28 +357,22 @@ class Client:
 		# recv from server
 		bytes_recv = self.UDP_socket.recvfrom(self.buffer_size)
 		message_recv = bytes_recv[0]
-		self.address_port = bytes_recv[1]
 		# decrypt
 		msg = message_recv.decode()
-		msg_decrypt = self.cifrado_cesar(msg, 26-3)
+		msg_decrypt = self.decypher(msg)
 		json_msg = json.loads(msg_decrypt)
 		print(json_msg)
 		# check if server_seq = ack_expected
-		#print("RECIVE UN seq: ", json_msg["seq"], "expected es: ", self.ack_expected)
-		#print("Esto es handshake:", json_msg["seq"], self.ack_expected)
 		if int(json_msg["seq"]) == self.ack_expected:
 			# port = server_port
-			#self.address_port = (self.ip, json_msg["port"])
-			self.ack = json_msg["seq"] # 11
-			self.ack_expected = self.ack + 1 # 12
-			#print("SE GUARDA EN LOS ATRIBUTOS ACK = SEQ Y ACK EXPECTED", self.ack, self.ack_expected)
-			#print("DENTRO DEL IF DEL handshake CLIENTE: ack, ack expected", self.ack, self.ack_expected)
+			self.address_port = (self.ip, json_msg["port"])
+			self.ack = json_msg["seq"]
+			self.ack_expected = self.ack + 1
 			print("recv ack with port from server")
 
 		else:
 			print("couldnt establish connection")
 			self.UDP_socket.close()
-
 
 
 	def main(self, user, password):
