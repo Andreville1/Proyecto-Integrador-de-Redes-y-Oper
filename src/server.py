@@ -19,6 +19,8 @@ class Server:
 		self.address_port = (address, port)
 		self.UDP_socket = socket.socket(
 			family=socket.AF_INET, type=socket.SOCK_DGRAM)
+		self.UDP_socket_paso_mensajes = socket.socket(
+                    family=socket.AF_INET, type=socket.SOCK_DGRAM)
 		self.buffer_size = 128
 		# TODO: put random values for numSeq and numAck
 		self.seq = 10 #seq = random.randint(0, 100)
