@@ -221,7 +221,7 @@ class Server:
 			family=socket.AF_INET, type=socket.SOCK_DGRAM)
 		self.UDP_socket_paso_mensajes = socket.socket(
                     family=socket.AF_INET, type=socket.SOCK_DGRAM)
-		print(self.address_port)
+		print("Recibo desde", self.address_port)
 		# Vincula direccion e IP
 		self.UDP_socket.bind(self.address_port)
 
@@ -241,13 +241,13 @@ class Server:
 
 		# armar mensaje ack
 		data_json = {"type": "ack", "ack": self.ack_expected, "seq": self.seq}
-		print("\n", address)
+		print("\nRecibo/Envio desde", address)
 		print("Envio", data_json)
 		# encrypt
 		msg_to_send = self.cypher(json.dumps(data_json))
 		bytesToSend = str.encode(msg_to_send)
 		# send to client
-		self.UDP_socket.sendto(bytesToSend, address)
+		self.UDP_socket.sendto(bytesToSend, self.address_port)
 		# print("sent ack to client")
 		
 		#recv from client
@@ -258,7 +258,7 @@ class Server:
 		msg = message_recv.decode()
 		msg_decrypt = self.decypher(msg)
 		json_msg = json.loads(msg_decrypt)
-		print("\n", address)
+		print("\nRecibo", address)
 		print("Recibo", json_msg)
 
 		if int(json_msg["seq"]) == self.ack_expected:
@@ -270,13 +270,13 @@ class Server:
 			# armar mensaje ack
 			data_json = {"type": "ack", "ack": self.ack_expected,
                             "seq": self.seq, "port": 4040} #address[1]
-			print("\n", address)
+			print("\nRecibo/Envio desde", address)
 			print("Envio", data_json)
 			#encrypt
 			msg_to_send = self.cypher(json.dumps(data_json))
 			bytesToSend = str.encode(msg_to_send) # self.address_port = address NUEVO
 			# send to client
-			self.UDP_socket.sendto(bytesToSend, address) # self.address_port
+			self.UDP_socket.sendto(bytesToSend, self.address_port) # self.address_port
 
 			# print("sent ack with port to client")
 			self.new_address_port = (self.ip, 4040) # address[1]

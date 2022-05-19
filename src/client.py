@@ -300,7 +300,7 @@ class Client:
 		return result
 
 	def handshake(self):
-		print(self.address_port)
+		print("Envio desde", self.address_port)
 		# create message syn
 		data_json = {"type": "syn", "seq": self.seq}
 		print("Envio", data_json)
@@ -320,7 +320,7 @@ class Client:
 		msg = message_recv.decode()
 		msg_decrypt = self.decypher(msg)
 		json_msg = json.loads(msg_decrypt)
-		print("\n", address)
+		print("\nRecibo", address)
 		print("Recibo", json_msg)
 
 		# self.ack = server.seq
@@ -332,13 +332,13 @@ class Client:
 		#create messagr ack
 		self.seq = self.seq + 1
 		data_json = {"type": "ack", "ack": self.ack_expected, "seq": self.seq}
-		print("\n", address)
+		print("\nEnvio desde", address)
 		print("Envio", data_json)
 		# encrypt
 		data_json_cifrado = self.cypher(json.dumps(data_json))
 		bytesToSend = str.encode(data_json_cifrado)
 		# send to server
-		self.UDP_socket.sendto(bytesToSend, address)
+		self.UDP_socket.sendto(bytesToSend, self.address_port)
 		# print("sent ack to server")
 
 		# recv from server
@@ -349,7 +349,7 @@ class Client:
 		msg = message_recv.decode()
 		msg_decrypt = self.decypher(msg)
 		json_msg = json.loads(msg_decrypt)
-		print("\n", address)
+		print("\nRecibo", address)
 		print("Recibo", json_msg)
 
 		# check if server_seq = ack_expected
