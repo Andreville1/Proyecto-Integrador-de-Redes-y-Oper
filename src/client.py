@@ -23,7 +23,7 @@ class Client:
                     family=socket.AF_INET, type=socket.SOCK_DGRAM)
 		self.buffer_size = 128
 		# TODO: put random values for numSeq and numAck 
-		self.seq = 0 #random.randint(0, 999) 
+		self.seq = random.randint(0, 100) #0
 		self.ack = 0
 		self.ack_expected = 0
 		self.fin = True

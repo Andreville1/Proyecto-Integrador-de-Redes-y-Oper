@@ -18,7 +18,7 @@ class Server:
 		self.address_port = (address, port)
 		self.buffer_size = 128
 		# TODO: put random values for numSeq and numAck
-		self.seq = 10 #seq = random.randint(0, 100)
+		self.seq = seq = random.randint(0, 100) #10
 		self.ack_expected = 0
 		self.ack = 0
 		self.fin = True
