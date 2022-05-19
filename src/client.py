@@ -35,7 +35,6 @@ class Client:
 
 			if (permission == '-w'):
 				if(can_write == True):
-					# print("llama a metodo de André")
 					self.send_operation()
 					rep = False
 				else:
@@ -54,7 +53,6 @@ class Client:
 	def authentication(self, user, password):
 
 		self.seq = self.seq + 1 # 2
-		#print("Autentificacion mando a login en seq un: ", self.seq)
 		data_json = {"seq":self.seq,"type":"login","fin":True,"username":user,"password":password}
 		# encrypt
 		data_json_cifrado = self.cypher(json.dumps(data_json)) # data_json_cifrado = self.cifrado_cesar(json.dumps(data_json), 3)
@@ -75,14 +73,10 @@ class Client:
 				# Copia la confirmacion y la direccion
 				# confirmation_msg, addr = self.UDP_socket.recvfrom(1024)
 				# json_confirmation_msg = json.loads(confirmation_msg)
-				#print(json_msg["seq"], self.ack_expected, self.seq)
-				#print("ESTOY ANTES DEL WHILE CLIENTE")
 				while(json_msg["seq"] != self.ack_expected): # 12 != 12
-					#print("ESTOY DENTRO DEL WHILE CLIENTE")
 					json_msg = self.recv_json()
 				self.ack = json_msg["seq"] # 12
 				self.ack_expected = self.ack + 1 # 13
-				#print("ESTOY DESPUES DEL WHILE CLIENTE")
 
 				# Recibe la validation
 				json_msg = self.recv_json()
@@ -166,12 +160,9 @@ class Client:
 		while no_stop:
 			self.UDP_socket.settimeout(TIMEOUT)
 			try:
-				#print("ESTOY EN EL TRY ANTES DE VERIFY")
 				self.verify()
-				#print("SALIO DEL VERIFY EN TRY")
 				no_stop = False
 				self.UDP_socket.close()
-				#print("DESPUES DE CLOSE")
 			except:
 				self.send_json(data_json)
 
@@ -194,14 +185,11 @@ class Client:
 		msg = message_recv.decode()
 		msg_decrypt = self.decypher(msg) # msg_decrypt = self.cifrado_cesar(msg, 26-3)
 		json_msg = json.loads(msg_decrypt) # verification_json = json.loads(verification)
-
-		#print("ESTO ES EL ACK",json_msg["ack"], "Y SE ESPERA", self.seq + 1 )
 		if json_msg["type"] == "ack":
 			if json_msg["ack"] == self.seq + 1: # 5 = 5 | 6 = 6
 				if json_msg["seq"] == self.ack_expected: # 14 = 14 | 15 = 15
 					self.ack = json_msg["seq"] # 14 | 15
 					self.ack_expected = self.ack + 1 # 15 | 16
-					#print("ENTRE AL VALID")
 					valid = True
 				else:
 					print("Seq erroneo")
@@ -228,17 +216,14 @@ class Client:
 		
 		if (len(json_string.encode('utf-8')) <= 128): # Lo envia de una vez
 			self.send_json(data_json)
-			#print("ENTRO AL SMS NO FRACCIONADO")
 			no_stop = True
 			while no_stop :
 				self.UDP_socket.settimeout(TIMEOUT)
 				try:
 					self.verify()
-					#print("TRY, SALIO DEL VERIFY")
 					no_stop = False
 				except :
 					self.send_json(data_json)
-					#print("TRY, ENTRO AL EXCEPT")
 
 			self.recv_operation()
 
@@ -265,6 +250,7 @@ class Client:
 		msg = message_recv.decode()
 		msg_decrypt = self.decypher(msg) # msg_decrypt = self.cifrado_cesar(msg, 26-3)
 		json_msg = json.loads(msg_decrypt) # operation_json = json.loads(operation) 
+
 		if json_msg["seq"] == self.ack_expected: # 16 = 16 | 17 = 17
 			if json_msg["type"] == "request":
 				if json_msg["fin"] == True:
@@ -276,7 +262,6 @@ class Client:
 						# Envia la verificacion que le llego bien el resultado
 						
 						self.seq = self.seq + 1 # 6 | 7
-						#print("ESTO ES SEQ: ",self.seq)
 						self.send_verification()
 						
 						self.send_request()
@@ -315,7 +300,7 @@ class Client:
 		return result
 
 	def handshake(self):
-		print("Estoy enviando 1 en: ", self.address_port)
+		print(self.address_port)
 		# create message syn
 		data_json = {"type": "syn", "seq": self.seq}
 		# encrypt
@@ -340,8 +325,6 @@ class Client:
 		self.ack_expected = json_msg["seq"] + 1
 
 		# print(self.seq, self.ack, self.ack_expected)
-		print("Estoy recibiendo 4 ", self.address_port)
-
 		#create messagr ack
 		self.seq = self.seq + 1
 		data_json = {"type": "ack", "ack": self.ack_expected, "seq": self.seq}
@@ -351,7 +334,6 @@ class Client:
 		# send to server
 		self.UDP_socket.sendto(bytesToSend, self.address_port)
 		# print("sent ack to server")
-		print("Estoy enviando 5 ", self.address_port)
 
 		# recv from server
 		bytes_recv = self.UDP_socket.recvfrom(self.buffer_size)
@@ -363,7 +345,6 @@ class Client:
 		json_msg = json.loads(msg_decrypt)
 		# print(json_msg)
 		# check if server_seq = ack_expected
-		print("Estoy recibiendo 8 ", self.address_port)
 		if int(json_msg["seq"]) == self.ack_expected:
 			# port = server_port
 			self.address_port = (self.ip, json_msg["port"])
@@ -375,14 +356,10 @@ class Client:
 			print("couldnt establish connection")
 			self.UDP_socket.close()
 
-		print("Ahora voy a enviar desde", self.address_port)
-
 	def main(self, user, password):
-		#print("Estoy aquii", user, password)
 		
 		self.handshake()
 		self.authentication(user, password)
-		#print("SOOY EL FIN")
 			# self.send_operation()
 			# if (self.receive_verification()):
 			#	self.receive_operation()
