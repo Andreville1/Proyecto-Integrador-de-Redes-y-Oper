@@ -31,7 +31,7 @@ class Client:
 	def validate_user_permissions(self, can_write):
 		rep = True
 		while(rep):
-			permission = input("¿Que necesita?: -r = read, -w = write y -q = exit \n")
+			permission = input("¿Que necesita?: -r = read, -w = write y q = exit \n")
 
 			if (permission == '-w'):
 				if(can_write == True):
@@ -44,7 +44,7 @@ class Client:
 				index = permission = input("Digite el numero de pagina que desee conocer")
 				#LEEE DEL DOCUMENTO
 				rep = False
-			elif(permission == '-q'):
+			elif(permission == 'q'):
 				rep = False
 				self.option_quit()
 			else:
