@@ -247,7 +247,7 @@ class Server:
 		msg_to_send = self.cypher(json.dumps(data_json))
 		bytesToSend = str.encode(msg_to_send)
 		# send to client
-		self.UDP_socket.sendto(bytesToSend, self.address_port)
+		self.UDP_socket.sendto(bytesToSend, address)
 		# print("sent ack to client")
 		
 		#recv from client
@@ -276,7 +276,7 @@ class Server:
 			msg_to_send = self.cypher(json.dumps(data_json))
 			bytesToSend = str.encode(msg_to_send) # self.address_port = address NUEVO
 			# send to client
-			self.UDP_socket.sendto(bytesToSend, self.address_port) # self.address_port
+			self.UDP_socket.sendto(bytesToSend, address) # self.address_port
 
 			# print("sent ack with port to client")
 			self.new_address_port = (self.ip, 4040) # address[1]

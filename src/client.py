@@ -338,7 +338,7 @@ class Client:
 		data_json_cifrado = self.cypher(json.dumps(data_json))
 		bytesToSend = str.encode(data_json_cifrado)
 		# send to server
-		self.UDP_socket.sendto(bytesToSend, self.address_port)
+		self.UDP_socket.sendto(bytesToSend, address) # address
 		# print("sent ack to server")
 
 		# recv from server
