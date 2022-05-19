@@ -24,21 +24,6 @@ class Server:
 		self.fin = True
 
 		self.new_address_port = (0,0)
-
-# taken from: https://www.pythonpool.com/caesar-cipher-python/
-	def cifrado_cesar(self, message, shift):
-		encryp_str = ""
-		for element in message:
-			if element.isupper():
-				temp = 65 + ((ord(element) - 65 + shift) % 26)
-				encryp_str = encryp_str + chr(temp)
-			elif element.islower():
-				temp = 97 + ((ord(element) - 97 + shift) % 26)
-				encryp_str = encryp_str + chr(temp)
-			else:
-				encryp_str = encryp_str + element
-		return encryp_str
-
 	
 	def credential_validation(self, user, password):
 		valid_user = False
