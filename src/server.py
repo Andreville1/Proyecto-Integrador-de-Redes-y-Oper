@@ -241,6 +241,7 @@ class Server:
 
 		# armar mensaje ack
 		data_json = {"type": "ack", "ack": self.ack_expected, "seq": self.seq}
+		print("\n", address)
 		print("Envio", data_json)
 		# encrypt
 		msg_to_send = self.cypher(json.dumps(data_json))
@@ -257,6 +258,7 @@ class Server:
 		msg = message_recv.decode()
 		msg_decrypt = self.decypher(msg)
 		json_msg = json.loads(msg_decrypt)
+		print("\n", address)
 		print("Recibo", json_msg)
 
 		if int(json_msg["seq"]) == self.ack_expected:
@@ -268,6 +270,7 @@ class Server:
 			# armar mensaje ack
 			data_json = {"type": "ack", "ack": self.ack_expected,
                             "seq": self.seq, "port": 4040} #address[1]
+			print("\n", address)
 			print("Envio", data_json)
 			#encrypt
 			msg_to_send = self.cypher(json.dumps(data_json))
