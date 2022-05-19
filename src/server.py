@@ -232,17 +232,18 @@ class Server:
 		msg = message_recv.decode()
 		msg_decrypt = self.decypher(msg)
 		json_msg = json.loads(msg_decrypt)
-
 		# print("recv syn from client")
+		print("Recibo", json_msg)
+
 		# numACK = clientSeq
 		self.ack = int(json_msg["seq"])
 		self.ack_expected = self.ack + 1
 
 		# armar mensaje ack
 		data_json = {"type": "ack", "ack": self.ack_expected, "seq": self.seq}
+		print("Envio", data_json)
 		# encrypt
 		msg_to_send = self.cypher(json.dumps(data_json))
-
 		bytesToSend = str.encode(msg_to_send)
 		# send to client
 		self.UDP_socket.sendto(bytesToSend, address)
@@ -252,24 +253,28 @@ class Server:
 		bytes_recv = self.UDP_socket.recvfrom(self.buffer_size)
 		message_recv = bytes_recv[0]
 		address = bytes_recv[1]
+		# decrypt
 		msg = message_recv.decode()
 		msg_decrypt = self.decypher(msg)
 		json_msg = json.loads(msg_decrypt)
+		print("Recibo", json_msg)
 
 		if int(json_msg["seq"]) == self.ack_expected:
 			self.ack = json_msg["seq"]
 			self.ack_expected = self.ack + 1
+
 			self.seq = self.seq + 1
 			#send to client
 			# armar mensaje ack
 			data_json = {"type": "ack", "ack": self.ack_expected,
                             "seq": self.seq, "port": 4040} #address[1]
+			print("Envio", data_json)
 			#encrypt
 			msg_to_send = self.cypher(json.dumps(data_json))
-			bytesToSend = str.encode(msg_to_send)
+			bytesToSend = str.encode(msg_to_send) # self.address_port = address NUEVO
 			# send to client
-			# self.address_port = address NUEVO
 			self.UDP_socket.sendto(bytesToSend, address) # self.address_port
+
 			# print("sent ack with port to client")
 			self.new_address_port = (self.ip, 4040) # address[1]
 			self.UDP_socket.close()
