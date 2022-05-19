@@ -262,6 +262,7 @@ class Server:
 		print("Recibo", json_msg)
 
 		if int(json_msg["seq"]) == self.ack_expected:
+			new_port = 4040
 			self.ack = json_msg["seq"]
 			self.ack_expected = self.ack + 1
 
@@ -269,7 +270,7 @@ class Server:
 			#send to client
 			# armar mensaje ack
 			data_json = {"type": "ack", "ack": self.ack_expected,
-                            "seq": self.seq, "port": 4040} #address[1]
+                            "seq": self.seq, "port": new_port} #address[1]
 			print("\nRecibo/Envio desde", address)
 			print("Envio", data_json)
 			#encrypt
@@ -277,9 +278,10 @@ class Server:
 			bytesToSend = str.encode(msg_to_send) # self.address_port = address NUEVO
 			# send to client
 			self.UDP_socket.sendto(bytesToSend, address) # self.address_port
-
+			
 			# print("sent ack with port to client")
-			self.new_address_port = (self.ip, 4040) # address[1]
+			self.new_address_port = (self.ip, new_port) # address[1]
+			new_port = new_port + 1
 			self.UDP_socket.close()
 			self.UDP_socket_paso_mensajes.bind(self.new_address_port)
 			
