@@ -1,20 +1,27 @@
 import json
 import random
 import socket
+import threading
 
-class Server:
+class Server(object):
 	def __init__(self, address, port):
 		self.ip = address # OJO
 		self.address_port = (address, port)
+		self.socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.socket_TCP.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		self.socket_TCP.bind(self.address_port)
+
 		self.buffer_size = 128
 		self.seq = seq = random.randint(0, 100) #10
 		self.ack_expected = 0
 		self.ack = 0
 		self.fin = True
 
+		# Bellman Ford
 		self.graph = []
 		self.lines = 0
 		self.source = ''
+
 
 	def recv_verification(self, connection):
 		bytes_recv = connection.recv(self.buffer_size)
@@ -23,7 +30,7 @@ class Server:
 		msg = bytes_recv.decode()
 		json_msg = json.loads(msg) # verification_json = json.loads(veri)
 
-		self.recv_request(connection)
+		self.recv_request(connection, self.address_port)
 
 	def send_result(self, address, result, operation, connection):
 		data_json = {"seq": self.seq, "type": "request", "fin": self.fin,
@@ -56,6 +63,7 @@ class Server:
 		operation = operation.replace("**", "^")
 		result = eval(operation)
 		
+		# LO NUEVO COMIENZA ACA
 		file = open('topologia.csv', 'r')
 		for line in file:
 			self.lines = self.lines + 1
@@ -82,13 +90,14 @@ class Server:
 
 		self.Bellman_Ford(self.source)
 		
+		# LO NUEVO TERMINA ACA
 
 		# Envia el resultado
 		self.send_result(address, result, operation, connection)
 
 		self.recv_verification(connection)
 	
-	def recv_request(self, connection):
+	def recv_request(self, connection, client_address):
 		
 		# Recibe la solicitud
 		bytes_recv = connection.recv(self.buffer_size)
@@ -111,16 +120,17 @@ class Server:
 		json_msg = json.loads(msg) # operation_json = json.loads(oper)
 		return json_msg, address
 
-	def main(self):
+	def listen(self):
+		self.socket_TCP.listen(7)
 		while True:
-			self.socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			self.socket_TCP.bind(self.address_port)
-			self.socket_TCP.listen(2)
 			connection, client_address = self.socket_TCP.accept()
+			connection.settimeout(60)
+			threading.Thread(target = self.recv_request, args = (connection,client_address)).start()
 
-			self.recv_request(connection)
+
+def main():
+	Server("127.0.0.1", 8080).listen()
 
 if __name__ == "__main__":
-	server = Server("127.0.0.1", 8080)
-	server.main()
+	main()
 
