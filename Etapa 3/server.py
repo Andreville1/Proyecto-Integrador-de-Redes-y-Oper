@@ -21,6 +21,9 @@ class Server(object):
 		self.graph = []
 		self.lines = 0
 		self.source = ''
+		self.distanceNeigh = {}
+		self.node = ""
+
 
 
 	def recv_verification(self, connection):
@@ -45,7 +48,7 @@ class Server(object):
 
 		for _ in range(self.lines - 1):
 			for u, v, w in self.graph:
-				print(u, v, w)
+				#print(u, v, w)
 				if dist[u] != float("Inf") and dist[u] + w < dist[v]:
 					dist[v] = dist[u] + w
 		
@@ -54,9 +57,16 @@ class Server(object):
 				print("Graph contains negative weight cycle")
 				return
 		
-		print("Nodo	Distancia desde el nodo principal")
+		#print("Nodo	Distancia desde el nodo principal")
 		for index in range(self.lines):
-			print("{0}\t\t{1}".format(chr(index+65), dist[index]))
+			#print("{0}\t\t{1}".format(chr(index+65), dist[index]))
+			self.node = chr(index+65)
+			if (dist[index] == float("Inf")):
+				self.distanceNeigh[self.node] = -1
+			else:
+				self.distanceNeigh[self.node] = dist[index]
+		
+		#print(self.distanceNeigh)
 
 	def calc_operation(self, operation_json, address, connection):
 		operation = operation_json["operation"]
@@ -89,6 +99,9 @@ class Server(object):
 		#print(self.source)
 
 		self.Bellman_Ford(self.source)
+
+		data_json = {"type": "vector", "node": chr(self.source+65), "conn": self.distanceNeigh}
+		print(data_json)
 		
 		# LO NUEVO TERMINA ACA
 
