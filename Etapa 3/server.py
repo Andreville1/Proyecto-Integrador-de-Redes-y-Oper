@@ -1,20 +1,30 @@
 import json
 import random
 import socket
+import threading
 
-class Server:
+class Server(object):
 	def __init__(self, address, port):
 		self.ip = address # OJO
 		self.address_port = (address, port)
+		self.socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.socket_TCP.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		self.socket_TCP.bind(self.address_port)
+
 		self.buffer_size = 128
 		self.seq = seq = random.randint(0, 100) #10
 		self.ack_expected = 0
 		self.ack = 0
 		self.fin = True
 
+		# Bellman Ford
 		self.graph = []
 		self.lines = 0
 		self.source = ''
+		self.distanceNeigh = {}
+		self.node = ""
+
+
 
 	def recv_verification(self, connection):
 		bytes_recv = connection.recv(self.buffer_size)
@@ -23,7 +33,7 @@ class Server:
 		msg = bytes_recv.decode()
 		json_msg = json.loads(msg) # verification_json = json.loads(veri)
 
-		self.recv_request(connection)
+		self.recv_request(connection, self.address_port)
 
 	def send_result(self, address, result, operation, connection):
 		data_json = {"seq": self.seq, "type": "request", "fin": self.fin,
@@ -38,7 +48,7 @@ class Server:
 
 		for _ in range(self.lines - 1):
 			for u, v, w in self.graph:
-				print(u, v, w)
+				#print(u, v, w)
 				if dist[u] != float("Inf") and dist[u] + w < dist[v]:
 					dist[v] = dist[u] + w
 		
@@ -47,15 +57,63 @@ class Server:
 				print("Graph contains negative weight cycle")
 				return
 		
-		print("Nodo	Distancia desde el nodo principal")
+		#print("Nodo	Distancia desde el nodo principal")
 		for index in range(self.lines):
-			print("{0}\t\t{1}".format(chr(index+65), dist[index]))
+			#print("{0}\t\t{1}".format(chr(index+65), dist[index]))
+			self.node = chr(index+65)
+			if (dist[index] == float("Inf")):
+				self.distanceNeigh[self.node] = -1
+			else:
+				self.distanceNeigh[self.node] = dist[index]
+		
+		#print(self.distanceNeigh)
 
 	def calc_operation(self, operation_json, address, connection):
 		operation = operation_json["operation"]
 		operation = operation.replace("**", "^")
 		result = eval(operation)
+
+		# LO NUEVO COMIENZA ACA
+		data_json = {"type": "vector", "node": chr(self.source+65), "conn": self.distanceNeigh}
+		print(data_json)
+		# LO NUEVO TERMINA ACA
+
+		# Envia el resultado
+		self.send_result(address, result, operation, connection)
+
+		self.recv_verification(connection)
+	
+	def recv_request(self, connection, client_address):
 		
+		# Recibe la solicitud
+		bytes_recv = connection.recv(self.buffer_size)
+		message_recv = bytes_recv[0] # request = json_to_recv[0]
+		address = bytes_recv[1] # server_address_port = json_to_recv[1]
+		msg = bytes_recv.decode()
+		json_msg = json.loads(msg)
+
+		if json_msg["type"] == "disconnect":
+			connection.close()
+		else:
+			self.calc_operation(json_msg, address, connection)
+
+	def recv_json(self, connection):
+		# recv from client
+		msg_from_server = connection.recv(self.buffer_size)
+		message_recv = msg_from_server[0] # operation = json_to_recv[0]
+		address = msg_from_server[1] # server_address_port = json_to_recv[1]
+		msg = msg_from_server.decode()
+		json_msg = json.loads(msg) # operation_json = json.loads(oper)
+		return json_msg, address
+
+	def listen(self):
+		self.socket_TCP.listen(7)
+		while True:
+			connection, client_address = self.socket_TCP.accept()
+			connection.settimeout(60)
+			threading.Thread(target = self.recv_request, args = (connection,client_address)).start()
+
+	def calc_table(self):
 		file = open('topologia.csv', 'r')
 		for line in file:
 			self.lines = self.lines + 1
@@ -81,46 +139,12 @@ class Server:
 		#print(self.source)
 
 		self.Bellman_Ford(self.source)
-		
 
-		# Envia el resultado
-		self.send_result(address, result, operation, connection)
-
-		self.recv_verification(connection)
-	
-	def recv_request(self, connection):
-		
-		# Recibe la solicitud
-		bytes_recv = connection.recv(self.buffer_size)
-		message_recv = bytes_recv[0] # request = json_to_recv[0]
-		address = bytes_recv[1] # server_address_port = json_to_recv[1]
-		msg = bytes_recv.decode()
-		json_msg = json.loads(msg)
-
-		if json_msg["type"] == "disconnect":
-			connection.close()
-		else:
-			self.calc_operation(json_msg, address, connection)
-
-	def recv_json(self, connection):
-		# recv from client
-		msg_from_server = connection.recv(self.buffer_size)
-		message_recv = msg_from_server[0] # operation = json_to_recv[0]
-		address = msg_from_server[1] # server_address_port = json_to_recv[1]
-		msg = msg_from_server.decode()
-		json_msg = json.loads(msg) # operation_json = json.loads(oper)
-		return json_msg, address
-
-	def main(self):
-		while True:
-			self.socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			self.socket_TCP.bind(self.address_port)
-			self.socket_TCP.listen(2)
-			connection, client_address = self.socket_TCP.accept()
-
-			self.recv_request(connection)
+def main():
+	server = Server("127.0.0.1", 8080)
+	server.calc_table()
+	server.listen()
 
 if __name__ == "__main__":
-	server = Server("127.0.0.1", 8080)
-	server.main()
+	main()
 
