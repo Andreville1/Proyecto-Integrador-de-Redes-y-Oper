@@ -72,37 +72,10 @@ class Server(object):
 		operation = operation_json["operation"]
 		operation = operation.replace("**", "^")
 		result = eval(operation)
-		
+
 		# LO NUEVO COMIENZA ACA
-		file = open('topologia.csv', 'r')
-		for line in file:
-			self.lines = self.lines + 1
-
-			# Remueve salto de linea
-			line = line.rstrip()
-
-			separator = ','
-			# Convierte la linea en un arreglo
-			list = line.split(',')
-
-			if (self.lines == 1):
-				self.source = ord(list[0])-65
-
-			#print(lines)
-			#print(list[0] + "/" + list[1] + "/" + list[2] + "/" + list[3] + "/" + list[4]
-			#+ "/" + list[5] + "/" + list[6])
-
-			# Agregue aristas
-			self.graph.append([ord(list[0])-65, ord(list[3])-65, int(list[6])])
-		
-		#print(self.graph)
-		#print(self.source)
-
-		self.Bellman_Ford(self.source)
-
 		data_json = {"type": "vector", "node": chr(self.source+65), "conn": self.distanceNeigh}
 		print(data_json)
-		
 		# LO NUEVO TERMINA ACA
 
 		# Envia el resultado
@@ -140,9 +113,37 @@ class Server(object):
 			connection.settimeout(60)
 			threading.Thread(target = self.recv_request, args = (connection,client_address)).start()
 
+	def calc_table(self):
+		file = open('topologia.csv', 'r')
+		for line in file:
+			self.lines = self.lines + 1
+
+			# Remueve salto de linea
+			line = line.rstrip()
+
+			separator = ','
+			# Convierte la linea en un arreglo
+			list = line.split(',')
+
+			if (self.lines == 1):
+				self.source = ord(list[0])-65
+
+			#print(lines)
+			#print(list[0] + "/" + list[1] + "/" + list[2] + "/" + list[3] + "/" + list[4]
+			#+ "/" + list[5] + "/" + list[6])
+
+			# Agregue aristas
+			self.graph.append([ord(list[0])-65, ord(list[3])-65, int(list[6])])
+		
+		#print(self.graph)
+		#print(self.source)
+
+		self.Bellman_Ford(self.source)
 
 def main():
-	Server("127.0.0.1", 8080).listen()
+	server = Server("127.0.0.1", 8080)
+	server.calc_table()
+	server.listen()
 
 if __name__ == "__main__":
 	main()
