@@ -29,6 +29,9 @@ class Server(object):
 
 		self.can_listen = True
 
+		self.cola_de_entrada = []
+		self.cola_de_salida = []
+
 	def recv_verification(self, connection):
 		bytes_recv = connection.recv(self.buffer_size)
 		message_recv = bytes_recv[0] # verification = json_to_recv[0]
@@ -129,8 +132,8 @@ class Server(object):
 			if (self.can_listen == True): # Se pone a esuchar por conexiones
 				socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				socket_TCP.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+				print("Escuchando en", self.address_port)
 				socket_TCP.bind(self.address_port)
-				print("Escuchando")
 				socket_TCP.listen(7)
 				socket_TCP.settimeout(5)
 				try:
@@ -144,21 +147,21 @@ class Server(object):
 				socket_TCP_connect = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				socket_TCP_connect.settimeout(2)
 				try:
-					print("Conectando")
 					new_address = (self.neigh_ip[cont], self.neigh_port[cont])
-					
+					print("Conectando en", new_address)
 					socket_TCP_connect.connect(new_address)
 					cont = cont + 1
 					if (cont == len(self.neigh_ip)):
 						cont = 0
 						self.can_listen = True
-					data_json = {"type": "vector", "node": chr(self.source+65), "conn": self.distanceNeigh}
+					data_json = {"type": "vector", "node": self.source, "conn": self.distanceNeigh}
 					self.send_json(data_json, socket_TCP_connect)
 				except:
 					cont = cont + 1
 					if (cont == len(self.neigh_ip)):
 						cont = 0
 						self.can_listen = True
+					# Cerrar socket
 				
 		
 	def calc_table(self):
@@ -186,6 +189,7 @@ class Server(object):
 
 			# Guarda la IP y puertos de sus vecinos
 			if (list[0] == self.source): 
+				self.address_port = (str(list[1]), int(list[2]))
 				self.neigh_ip[cont] = str(list[4])
 				self.neigh_port[cont] = int(list[5])
 				cont = cont + 1
@@ -197,7 +201,7 @@ class Server(object):
 		self.can_continue = True
 
 def main():
-	server = Server("127.0.0.1", 8080)
+	server = Server("", 0)
 	server.calc_table()
 	server.listen()
 
