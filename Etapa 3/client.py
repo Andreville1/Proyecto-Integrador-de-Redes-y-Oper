@@ -40,7 +40,7 @@ class Client:
 		message_recv = bytes_recv
 		serverAddressPort = bytes_recv[1]
 		msg = message_recv.decode()
-		json_msg = json.loads(msg) # operation_json = json.loads(operation) 
+		json_msg = json.loads(msg)
 
 		if json_msg["type"] == "request":
 			if json_msg["fin"] == True:
@@ -67,7 +67,7 @@ class Client:
 	def send_operation(self):
 		operation = input("Ingrese la operacion: ")
 		data_json = {"seq": self.seq, "type": "request",
-                    "fin": self.fin, "request": "write", "operation": operation}
+                    "fin": self.fin, "request": "write", "oper": operation}
 		
 		json_string = json.dumps(data_json)
 		

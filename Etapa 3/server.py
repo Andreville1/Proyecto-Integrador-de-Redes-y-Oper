@@ -9,9 +9,6 @@ class Server(object):
 	def __init__(self, address, port):
 		self.ip = address # OJO
 		self.address_port = (address, port)
-		self.socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.socket_TCP.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		self.socket_TCP.bind(self.address_port)
 
 		self.buffer_size = 128
 		self.seq = seq = random.randint(0, 100) #10
@@ -43,7 +40,7 @@ class Server(object):
 
 	def send_result(self, address, result, operation, connection):
 		data_json = {"seq": self.seq, "type": "request", "fin": self.fin,
-				"request": "write", "result": result, "operation": operation}
+				"request": "write", "result": result, "oper": operation}
 		bytesToSend = str.encode(json.dumps(data_json))
 		# Envia el resultado
 		connection.sendall(bytesToSend)
@@ -75,7 +72,7 @@ class Server(object):
 		print(self.distanceNeigh)
 
 	def calc_operation(self, operation_json, address, connection):
-		operation = operation_json["operation"]
+		operation = operation_json["oper"]
 		operation = operation.replace("**", "^")
 		result = eval(operation)
 
@@ -99,18 +96,27 @@ class Server(object):
 
 		if json_msg["type"] == "disconnect": # Caso en que el cliente se quiere desconectar
 			connection.close()
-		elif json_msg["type"] == "vector": # Caso en que le llega un paquete de un nodo
-			print(json_msg)
+		elif json_msg["type"] == "vector": # Caso en que le llega un vector de un nodo
+			self.cola_de_entrada.append(json_msg["conn"])
+			print("Estoy recibiendo un vector", self.cola_de_entrada)
+		elif json_msg["type"] == "operation": # Caso en que recibe una operacion de un nodo
+			if (json_msg["destination"] == self.source):
+				self.cola_de_entrada.append(json_msg["operation"])
+				print("Estoy recibiendo un fragmento de operacion", self.cola_de_entrada)
+			else:
+				self.cola_de_salida.append(json_msg["operation"])
+				print("Estoy guardando un fragmento de operacion", self.cola_de_salida)
 		else: # Caso en que recibe un paquete del cliente
 			self.calc_operation(json_msg, address, connection)
+
 
 	def recv_json(self, connection):
 		# recv from client
 		msg_from_server = connection.recv(self.buffer_size)
-		message_recv = msg_from_server[0] # operation = json_to_recv[0]
+		message_recv = msg_from_server[0]
 		address = msg_from_server[1] # server_address_port = json_to_recv[1]
 		msg = msg_from_server.decode()
-		json_msg = json.loads(msg) # operation_json = json.loads(oper)
+		json_msg = json.loads(msg)
 		return json_msg, address
 
 	def send_json(self, data_json, socket_TCP_connect):
@@ -121,14 +127,19 @@ class Server(object):
 		cont = 0
 		while True:
 			if (self.can_listen == True): # Se pone a esuchar por conexiones
-				self.socket_TCP.settimeout(5)
+				socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				socket_TCP.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+				socket_TCP.bind(self.address_port)
+				print("Escuchando")
+				socket_TCP.listen(7)
+				socket_TCP.settimeout(5)
 				try:
-					print("Escuchando")
-					self.socket_TCP.listen(7)
-					connection, client_address = self.socket_TCP.accept()
+					connection, client_address = socket_TCP.accept()
 					threading.Thread(target = self.recv_request, args = (connection,client_address)).start()
 				except: 
 					self.can_listen = False
+					socket_TCP.close()
+
 			else: # Se pone a conectar con un nodo vecino
 				socket_TCP_connect = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				socket_TCP_connect.settimeout(2)
