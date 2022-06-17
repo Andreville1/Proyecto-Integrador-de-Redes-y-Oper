@@ -8,6 +8,7 @@ from xmlrpc.client import TRANSPORT_ERROR
 class Server(object):
 	def __init__(self, address, port):
 		self.ip = address # OJO
+		print(address, port)
 		self.address_port = (address, port)
 
 		self.buffer_size = 128
@@ -133,7 +134,10 @@ class Server(object):
 				socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				socket_TCP.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 				print("Escuchando en", self.address_port)
+				print("ANTES DEL BIND")
+				print("address_port es: ", address_port)
 				socket_TCP.bind(self.address_port)
+				print("DESPUES DEL BIND")
 				socket_TCP.listen(7)
 				socket_TCP.settimeout(5)
 				try:
@@ -167,7 +171,7 @@ class Server(object):
 	def calc_table(self):
 		self.source = sys.argv[1]
 		cont = 0
-		file = open('topologia.csv', 'r')
+		file = open('topologia2.csv', 'r')
 		for line in file:
 			self.lines = self.lines + 1
 
@@ -200,8 +204,28 @@ class Server(object):
 		self.Bellman_Ford()
 		self.can_continue = True
 
+def set_address():
+	source = sys.argv[1]
+	file = open('topologia2.csv', 'r')
+	enter = True
+	for line in file:
+
+		# Remueve salto de linea
+		line = line.rstrip()
+
+		separator = ','
+		# Convierte la linea en un arreglo
+		list = line.split(',')
+		#print(list)
+		if(source == list[0] and enter == True):
+			address_port = (str(list[1]), int(list[2]))
+			enter = False
+	
+	return address_port, source
+
 def main():
-	server = Server("", 0)
+	tuple = set_address()
+	server = Server(tuple[0], tuple[1])
 	server.calc_table()
 	server.listen()
 
