@@ -3,12 +3,11 @@ import random
 import socket
 import threading
 import sys
-from xmlrpc.client import TRANSPORT_ERROR
 
 class Server(object):
 	def __init__(self, address, port):
 		self.ip = address # OJO
-		print(address, port)
+		# print(address, port)
 		self.address_port = (address, port)
 
 		self.buffer_size = 128
@@ -134,10 +133,10 @@ class Server(object):
 				socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				socket_TCP.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 				print("Escuchando en", self.address_port)
-				print("ANTES DEL BIND")
-				print("address_port es: ", address_port)
+				#print("ANTES DEL BIND")
+				#print("address_port es: ", self.address_port)
 				socket_TCP.bind(self.address_port)
-				print("DESPUES DEL BIND")
+				#print("DESPUES DEL BIND")
 				socket_TCP.listen(7)
 				socket_TCP.settimeout(5)
 				try:
