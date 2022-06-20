@@ -3,6 +3,8 @@
 
 #define byteSize 8
 
+#include <iostream>
+
 class PageTableEntry
 {
 private:
@@ -27,6 +29,8 @@ public:
 	void setOperacion(char* operacion);
 
 	void reset();
+
+	friend std::ostream& operator<<(std::ostream& os, const PageTableEntry& pageTable);
 };
 
 #endif

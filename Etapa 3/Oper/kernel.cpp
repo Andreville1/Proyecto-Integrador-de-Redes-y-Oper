@@ -1,7 +1,5 @@
-#include "Memory.h"
-#include "Disk.h"
-#include "PageTable.h"
-
-int main(int argc, const char** argv) {
-	return 0;
+int main(int argc, char const *argv[])
+{
+    /* code */
+    return 0;
 }

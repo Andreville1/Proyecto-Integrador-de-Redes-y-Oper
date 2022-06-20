@@ -52,3 +52,11 @@ void PageTableEntry::setOperacion(char* operacion){
 void reset(){
 
 }
+
+std::ostream& operator<<(std::ostream& os, const PageTableEntry& dt)
+{
+    os << dt.operacion << '|' << dt.numPag << '|' << dt.direccion
+		<< '|' << dt.presente << "|" << dt.referencia;
+    return os;
+}
+

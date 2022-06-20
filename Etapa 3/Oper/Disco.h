@@ -1,18 +1,21 @@
-#ifndef DISK_H
-#define DISK_H
+#ifndef DISCO_H
+#define DISCO_H
 
 #include <string>
 #include <vector>
 
+
 #define byteSize 8
 
-class Disk {
+class Disco {
 	protected:
 		std::vector<char*> operaciones;
 	
 	public:
 		void agregarOperacion(char operacion[byteSize]);
-		Disk();
+		Disco();
+		
+
 };
 
 #endif // DISK_H

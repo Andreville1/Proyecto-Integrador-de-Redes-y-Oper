@@ -4,12 +4,12 @@
 #include "PageTableEntry.h"
 #include <array>
 
-class Memory{
+class Memoria{
 	protected:
 		std::array<PageTableEntry, 4> paginas;
 
 	public:
-		Memory();
+		Memoria();
 		void agregarPagina(PageTableEntry entrada);
 };
 
