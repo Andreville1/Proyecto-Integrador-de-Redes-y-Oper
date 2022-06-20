@@ -6,6 +6,8 @@
 
 #include "ManejoMemoria.h"
 
+class ManejoMemoria;
+
 #define byteSize 8
 
 class Disco {
@@ -16,7 +18,7 @@ class Disco {
 	public:
 		void agregarOperacion(char operacion[byteSize]);
 		Disco();
-		
+		void setMMU(ManejoMemoria* mmu);
 
 };
 

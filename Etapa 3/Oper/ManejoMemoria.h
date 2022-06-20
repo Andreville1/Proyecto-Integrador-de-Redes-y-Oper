@@ -4,9 +4,12 @@
 #include <string>
 #include <vector>
 
+
 #include "Disco.h"
 #include "PageTable.h"
 #include "Memoria.h"
+
+class Disco;
 
 #define byteSize 8
 
