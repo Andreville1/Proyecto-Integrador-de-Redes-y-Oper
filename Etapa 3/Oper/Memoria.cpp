@@ -1,4 +1,4 @@
-#include "Memory.h"
+#include "Memoria.h"
 
 Memory::Memory(){
 	
