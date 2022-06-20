@@ -9,19 +9,22 @@ private:
 	bool presente;
 	int numPag;
 	bool referencia;
-	char operacion[byteSize];
+	char* operacion;
 	int direccion;
 
 public:
 	PageTableEntry();
 	bool getPresente();
 	void setPresente(bool flag);
+	bool getReferencia();
+	void setReferencia(bool flag);
 
 	int getNumPag();
 	void setNumPag(int num);
 	char* getOperacion();
 	void setDireccion(int direccion);
 	int getDireccion();
+	void setOperacion(char* operacion);
 
 	void reset();
 };

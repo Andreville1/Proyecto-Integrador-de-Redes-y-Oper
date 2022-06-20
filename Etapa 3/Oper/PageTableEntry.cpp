@@ -15,6 +15,16 @@ void PageTableEntry::setPresente(bool flag){
 	this->presente = flag;
 }
 
+bool PageTableEntry::getReferencia()
+{
+	return this->referencia;
+}
+
+void PageTableEntry::setReferencia(bool flag)
+{
+	this->referencia = flag;
+}
+
 int PageTableEntry::getNumPag(){
 	return this->numPag;
 }
@@ -33,6 +43,10 @@ void PageTableEntry::setDireccion(int direccion){
 
 int PageTableEntry::getDireccion(){
 	return this->direccion;
+}
+
+void PageTableEntry::setOperacion(char* operacion){
+	this->operacion = operacion;
 }
 
 void reset(){
