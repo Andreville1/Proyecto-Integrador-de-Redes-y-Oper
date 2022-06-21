@@ -9,10 +9,9 @@ Disco::Disco(){
 
 void Disco::agregarOperacion(char operacion[byteSize]){
 	this->operaciones.push_back(operacion);
-	std::cout << "Disco: " << this->operaciones.back() << std::endl;
-	// this->mmu->Notify("OPDisco", operacion);
+	this->mmu->Notify("OPDisco", operacion, 0);
 }
 
-// void Disk::setMMU(ManejoMemoria* mmu){
-// 	this->mmu = mmu; 
-// }
+void Disco::setMMU(ManejoMemoria* mmu){
+	this->mmu = mmu; 
+}

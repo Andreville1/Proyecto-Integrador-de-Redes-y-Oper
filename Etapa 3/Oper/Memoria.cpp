@@ -11,3 +11,7 @@ void Memoria::agregarPagina(PageTableEntry entrada){
 		}
 	}
 }
+
+void Memoria::setMMU(ManejoMemoria* mmu){
+	this->mmu = mmu;
+}
