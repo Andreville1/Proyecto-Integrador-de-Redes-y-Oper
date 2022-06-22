@@ -7,7 +7,6 @@ import sys
 class Server(object):
 	def __init__(self, address, port):
 		self.ip = address # OJO
-		# print(address, port)
 		self.address_port = (address, port)
 
 		self.buffer_size = 128
@@ -17,11 +16,12 @@ class Server(object):
 		self.fin = True
 
 		# Bellman Ford
-		self.graph = []
+		self.graph = {}
 		self.lines = 0
 		self.source = ''
 		self.distanceNeigh = {}
 		self.node = ""
+		self.prev = ""
 
 		self.can_continue = False
 		self.neigh_ip = {}
@@ -30,7 +30,7 @@ class Server(object):
 		self.can_listen = True
 
 		self.cola_de_entrada = []
-		self.cola_de_salida = []
+		self.cola_de_salida = {}
 
 	def recv_verification(self, connection):
 		bytes_recv = connection.recv(self.buffer_size)
@@ -48,7 +48,7 @@ class Server(object):
 		# Envia el resultado
 		connection.sendall(bytesToSend)
 
-	def Bellman_Ford(self):
+	"""def Bellman_Ford(self):
 		dist = [float("Inf")] * self.lines
 		dist[ord(self.source)-65] = 0
 
@@ -63,7 +63,7 @@ class Server(object):
 				print("Graph contains negative weight cycle")
 				return
 		
-		#print("Nodo	Distancia desde el nodo principal")
+		#print("Nodo	Distancia desde el nodo principal") # A:
 		for index in range(self.lines):
 			#print("{0}\t\t{1}".format(chr(index+65), dist[index]))
 			self.node = chr(index+65)
@@ -73,7 +73,33 @@ class Server(object):
 				self.distanceNeigh[self.node] = dist[index]
 		
 		print(self.distanceNeigh)
+	"""
 
+	def Bellman_Ford(self, graph):
+		inf = sys.maxsize
+		node_data = graph.copy()
+		data = {'cost':inf,'pred':[]}
+	
+		for index in graph:
+			node_data[index] = data.copy()
+
+		node_data[self.source]['cost'] = 0
+		for i in range(len(graph)- 1):
+			#print('Iteration '+str(i))
+			for itr in graph:
+				for neighbor in graph[itr]:
+					cost = node_data[itr]['cost'] + graph[itr][neighbor]
+					if cost < node_data[neighbor]['cost']:
+						node_data[neighbor]['cost'] = cost
+						if node_data[neighbor]['cost'] == inf:
+							node_data[neighbor]['pred'] = node_data[itr]['pred'] + [itr]
+						else:
+							node_data[neighbor]['pred'].clear()
+							node_data[neighbor]['pred'] = node_data[itr]['pred'] + [itr]
+		
+			print(node_data)
+
+		
 	def calc_operation(self, operation_json, address, connection):
 		operation = operation_json["oper"]
 		operation = operation.replace("**", "^")
@@ -89,7 +115,6 @@ class Server(object):
 		self.recv_verification(connection)
 	
 	def recv_request(self, connection, client_address):
-		
 		# Recibe la solicitud
 		bytes_recv = connection.recv(self.buffer_size)
 		message_recv = bytes_recv[0] # request = json_to_recv[0]
@@ -100,15 +125,18 @@ class Server(object):
 		if json_msg["type"] == "disconnect": # Caso en que el cliente se quiere desconectar
 			connection.close()
 		elif json_msg["type"] == "vector": # Caso en que le llega un vector de un nodo
-			self.cola_de_entrada.append(json_msg["conn"])
-			print("Estoy recibiendo un vector", self.cola_de_entrada)
+			print(json_msg["conn"])
+			# Calcule tabla de vectores
+			#self.Bellman_Ford_update(json_msg["conn"])
 		elif json_msg["type"] == "operation": # Caso en que recibe una operacion de un nodo
 			if (json_msg["destination"] == self.source):
 				self.cola_de_entrada.append(json_msg["operation"])
 				print("Estoy recibiendo un fragmento de operacion", self.cola_de_entrada)
+				# ESTA PARTE LE TOCA A LUCIA Y ADRIAN
 			else:
-				self.cola_de_salida.append(json_msg["operation"])
+				self.cola_de_salida.update({json_msg["destination"]:json_msg["operation"]}) # A: 5+5
 				print("Estoy guardando un fragmento de operacion", self.cola_de_salida)
+				# ENVIAR A LOS OTROS NODOS
 		else: # Caso en que recibe un paquete del cliente
 			self.calc_operation(json_msg, address, connection)
 
@@ -133,15 +161,13 @@ class Server(object):
 				socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				socket_TCP.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 				print("Escuchando en", self.address_port)
-				#print("ANTES DEL BIND")
-				#print("address_port es: ", self.address_port)
 				socket_TCP.bind(self.address_port)
-				#print("DESPUES DEL BIND")
 				socket_TCP.listen(7)
 				socket_TCP.settimeout(5)
 				try:
 					connection, client_address = socket_TCP.accept()
 					threading.Thread(target = self.recv_request, args = (connection,client_address)).start()
+					socket_TCP.close()
 				except: 
 					self.can_listen = False
 					socket_TCP.close()
@@ -150,6 +176,7 @@ class Server(object):
 				socket_TCP_connect = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				socket_TCP_connect.settimeout(2)
 				try:
+					# Agregar vector de vecinos
 					new_address = (self.neigh_ip[cont], self.neigh_port[cont])
 					print("Conectando en", new_address)
 					socket_TCP_connect.connect(new_address)
@@ -157,6 +184,12 @@ class Server(object):
 					if (cont == len(self.neigh_ip)):
 						cont = 0
 						self.can_listen = True
+					"""
+					if (table_vector == TRUE): #YA SE TERMINO EL RECORRIDO DE LAS TABLAS
+						# ENVIA OPERACION
+					ELSE: # NO SE HA TEMRINADO EL RECORRIDO
+							data_json = {"type": "vector", "node": self.source, "conn": self.distanceNeigh}
+					"""
 					data_json = {"type": "vector", "node": self.source, "conn": self.distanceNeigh}
 					self.send_json(data_json, socket_TCP_connect)
 				except:
@@ -169,7 +202,9 @@ class Server(object):
 		
 	def calc_table(self):
 		self.source = sys.argv[1]
+		self.prev = self.source
 		cont = 0
+		neigh = {}
 		file = open('topologia2.csv', 'r')
 		for line in file:
 			self.lines = self.lines + 1
@@ -177,17 +212,30 @@ class Server(object):
 			# Remueve salto de linea
 			line = line.rstrip()
 
-			separator = ','
 			# Convierte la linea en un arreglo
 			list = line.split(',')
 
 			#print(lines)
 			#print(list[0] + "/" + list[1] + "/" + list[2] + "/" + list[3] + "/" + list[4]
 			#+ "/" + list[5] + "/" + list[6])
-
+			
 			# Agregue aristas
-			self.graph.append([ord(list[0])-65, ord(list[3])-65, int(list[6])])
+			if (self.prev == list[0]): # A == B
+				neigh[list[3]] = int(list[6])
+				#neigh.update({list[3]:list[6]}) 
+				self.graph[list[0]] = neigh
+				#print(self.graph)
+			else: 
+				neigh = {}
+				#neigh.clear()
+				neigh[list[3]] = int(list[6])
+				#neigh.update({list[3]:list[6]}) 
+				self.graph[list[0]] = neigh
+				#self.graph.update({list[0]:neigh})
+				#print(self.graph)
 
+			self.prev = list[0]
+			#self.graph.append([ord(list[0])-65, ord(list[3])-65, int(list[6])])
 			#print(self.source)
 
 			# Guarda la IP y puertos de sus vecinos
@@ -197,10 +245,13 @@ class Server(object):
 				self.neigh_port[cont] = int(list[5])
 				cont = cont + 1
 		
-		#print(self.graph)
-		#print(self.source)
+		neigh = {}
+		temp = ord(self.prev)
+		self.graph[chr(temp+1)] = neigh
+		# print(self.graph)
+		# print("HOla", self.graph)
 
-		self.Bellman_Ford()
+		self.Bellman_Ford(self.graph)
 		self.can_continue = True
 
 def set_address():
