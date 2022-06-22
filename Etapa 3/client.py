@@ -1,3 +1,4 @@
+import re
 import argparse
 import json
 import random
@@ -36,7 +37,7 @@ class Client:
 	def recv_operation(self):
 		#TODO: Refactor this:
 		# Recibe el resultado
-		bytes_recv = self.socket_TCP.recv(self.buffer_size) 
+		bytes_recv = self.socket_TCP.recv(1024) 
 		message_recv = bytes_recv
 		serverAddressPort = bytes_recv[1]
 		msg = message_recv.decode()
@@ -45,7 +46,7 @@ class Client:
 		if json_msg["type"] == "request":
 			if json_msg["fin"] == True:
 				if json_msg["request"] == "write":
-					print(json_msg["result"])
+					print("El resultado es: ", json_msg["oper"])
 
 					# Envia la verificacion que le llego bien el resultado
 					self.send_verification()
@@ -64,10 +65,20 @@ class Client:
 		# Envia el json
 		self.socket_TCP.sendall(bytesToSend)
 
+	def split_oper(self, myString):
+		myString = myString.replace(" ", "")
+		list = []
+		while(myString):
+			result = re.search(r'(\(*\d+[\+\-\*\/]\d+[\+\-\*\/]*\)*(?<=[\)])[\+\-\*\/]*)|(\d+[\+\-\*\/]*\(\d+[\+\-\*\/]\d+\)[\+\-\*\/\)]*)|\d+[\+\-\*\/]*(?<=[\(])\(|[\+\-\*\/]*\d+[\+\-\*\/]*(?<=[\)])\(|sqrt\(\d\)[\+\-\*\/]*|\(*\d+[\+\-\*\/]\d[\+\-\*\/]*|(\(*\d+(\)|\*\*\d+)*)[\+\-\*\/]*', myString)
+			list.append(result.group(0))
+			myString = myString.replace(result.group(0), "")
+		return list
+
 	def send_operation(self):
 		operation = input("Ingrese la operacion: ")
+		list_oper = self.split_oper(operation)
 		data_json = {"seq": self.seq, "type": "request",
-                    "fin": self.fin, "request": "write", "oper": operation}
+                    "fin": self.fin, "request": "write", "oper": list_oper}
 		
 		json_string = json.dumps(data_json)
 		
