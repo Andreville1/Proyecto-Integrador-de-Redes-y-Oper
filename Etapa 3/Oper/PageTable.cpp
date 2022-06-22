@@ -41,24 +41,22 @@ void PageTable::agregarEntrada(char operacion[byteSize]){
 
 
 	this->entradas[fila][columna] = entry;
-
-		std::cout << fila << ":" << columna << ": " << this->entradas[fila][columna] << std::endl;
 	
 	this->contador++;
 	this->mmu->Notify("OPPageTable", operacion, entry.getDireccion());
 
 }
 
-bool PageTable::buscarOperacion(char operacion[byteSize]){
+PageTableEntry PageTable::buscarOperacion(char operacion[byteSize]){
 	for (size_t fila = 0; fila < this->entradas.size(); ++fila)
 	{
 		for(size_t col = 0; col < 3; ++col){
 			if(this->entradas[fila][col].getOperacion() == operacion){
-				return true;
+				return this->entradas[fila][col];
 			}
 		}
 	}
-	return false;
+	return PageTableEntry();
 }
 
 void PageTable::setMMU(ManejoMemoria* mmu){
