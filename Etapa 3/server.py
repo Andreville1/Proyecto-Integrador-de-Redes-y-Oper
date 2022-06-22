@@ -141,16 +141,14 @@ class Server(object):
 		print("Original", self.node_data)
 		
 	def calc_operation(self, operation_json, address, connection):
-		operation = operation_json["oper"]
-		operation = operation.replace("**", "^")
-		result = eval(operation)
-
-		# LO NUEVO COMIENZA ACA
-		#print(data_json)
-		# LO NUEVO TERMINA ACA
-
+		#operation = operation_json["oper"]
+		#operation = operation.replace("**", "^")
+		#result = eval(operation)
+		data_json = {"seq": self.seq, "type": "request", "fin": self.fin,
+					"request": "write", "oper": operation_json["oper"]}
+		self.send_json(data_json, connection)
 		# Envia el resultado
-		self.send_result(address, result, operation, connection)
+		#self.send_result(address, result, operation, connection)
 
 		self.recv_verification(connection)
 	

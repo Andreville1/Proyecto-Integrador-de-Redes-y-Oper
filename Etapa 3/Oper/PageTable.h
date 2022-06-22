@@ -20,7 +20,7 @@ class PageTable{
 
 	public:
 		PageTable();
-		bool buscarOperacion(char operacion[byteSize]);
+		PageTableEntry buscarOperacion(char operacion[byteSize]);
 		void agregarEntrada(char operacion[byteSize]);
 		size_t numeroFila( size_t indice);
 		size_t numeroColumna(size_t indice);

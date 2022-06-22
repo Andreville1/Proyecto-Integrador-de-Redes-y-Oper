@@ -23,7 +23,10 @@ void ManejoMemoria::Notify(std::string evento, char* operacion, int direccion){
     }
     if( evento == "OPPageTable"){
         // Se agrega operacion al PT
-        // agregar a memoria 
+        // agregar a memoria
+        PageTableEntry entrada = this->paginaTabla->buscarOperacion(operacion);
+        std::cout << "entrada:" << entrada << std::endl;
+        this->memoria->agregarPagina(entrada);
     }
 }
 

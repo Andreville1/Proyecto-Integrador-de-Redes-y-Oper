@@ -7,8 +7,9 @@
 
 class Memoria{
 	protected:
-		std::array<PageTableEntry, 4> paginas;
+		std::array<char*, 3> paginas;
 		ManejoMemoria* mmu;
+		int count = 0;
 
 	public:
 		Memoria();

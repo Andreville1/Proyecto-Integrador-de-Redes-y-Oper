@@ -17,6 +17,6 @@ int main(int argc, char const *argv[])
     mmu.agregarOperacion("5+2");
       mmu.agregarOperacion("3+2");
     mmu.agregarOperacion("5+2");
-    pt->print();
+    
     return 0;
 }
