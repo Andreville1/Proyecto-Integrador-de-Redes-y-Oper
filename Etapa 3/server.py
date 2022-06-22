@@ -19,9 +19,10 @@ class Server(object):
 		self.graph = {}
 		self.lines = 0
 		self.source = ''
-		self.distanceNeigh = {}
+		self.distanceNeigh = []
 		self.node = ""
 		self.prev = ""
+		self.node_data = {}
 
 		self.can_continue = False
 		self.neigh_ip = {}
@@ -75,30 +76,69 @@ class Server(object):
 		print(self.distanceNeigh)
 	"""
 
-	def Bellman_Ford(self, graph):
+	def Bellman_Ford_update(self, graph):
 		inf = sys.maxsize
-		node_data = graph.copy()
-		data = {'cost':inf,'pred':[]}
-	
-		for index in graph:
-			node_data[index] = data.copy()
-
-		node_data[self.source]['cost'] = 0
 		for i in range(len(graph)- 1):
 			#print('Iteration '+str(i))
 			for itr in graph:
 				for neighbor in graph[itr]:
-					cost = node_data[itr]['cost'] + graph[itr][neighbor]
-					if cost < node_data[neighbor]['cost']:
-						node_data[neighbor]['cost'] = cost
-						if node_data[neighbor]['cost'] == inf:
-							node_data[neighbor]['pred'] = node_data[itr]['pred'] + [itr]
+					print(neighbor, graph[itr])
+					cost = self.node_data[itr]['cost'] + graph[itr][neighbor]
+					if cost < self.node_data[neighbor]['cost']:
+						self.node_data[neighbor]['cost'] = cost
+						if self.node_data[neighbor]['cost'] == inf:
+							self.node_data[neighbor]['pred'] = self.node_data[itr]['pred'] + [itr]
 						else:
-							node_data[neighbor]['pred'].clear()
-							node_data[neighbor]['pred'] = node_data[itr]['pred'] + [itr]
+							self.node_data[neighbor]['pred'].clear()
+							self.node_data[neighbor]['pred'] = self.node_data[itr]['pred'] + [itr]
 		
-			print(node_data)
+			#print("Original", self.node_data)
+		
+		for neighbor in graph:
+			if (self.node_data[neighbor]['cost'] > 10):
+				data = {"target":neighbor,"weight":-1}
+				self.distanceNeigh.append(data)
+			else:
+				data = {"target":neighbor,"weight":self.node_data[neighbor]['cost']}
+				self.distanceNeigh.append(data)
 
+		# print(self.distanceNeigh)
+		#print("Actualizado", self.node_data)
+
+	def Bellman_Ford(self, graph):
+		inf = sys.maxsize
+		self.node_data = graph.copy()
+		data = {'cost':inf,'pred':[]}
+	
+		for index in graph:
+			self.node_data[index] = data.copy()
+
+		self.node_data[self.source]['cost'] = 0
+		for i in range(len(graph)- 1):
+			#print('Iteration '+str(i))
+			for itr in graph:
+				for neighbor in graph[itr]:
+					cost = self.node_data[itr]['cost'] + graph[itr][neighbor]
+					if cost < self.node_data[neighbor]['cost']:
+						self.node_data[neighbor]['cost'] = cost
+						if self.node_data[neighbor]['cost'] == inf:
+							self.node_data[neighbor]['pred'] = self.node_data[itr]['pred'] + [itr]
+						else:
+							self.node_data[neighbor]['pred'].clear()
+							self.node_data[neighbor]['pred'] = self.node_data[itr]['pred'] + [itr]
+		
+			#print("Original", self.node_data)
+		
+		for neighbor in graph:
+			if (self.node_data[neighbor]['cost'] > 10):
+				data = {"target":neighbor,"weight":-1}
+				self.distanceNeigh.append(data)
+			else:
+				data = {"target":neighbor,"weight":self.node_data[neighbor]['cost']}
+				self.distanceNeigh.append(data)
+
+		# print(self.distanceNeigh)
+		print("Original", self.node_data)
 		
 	def calc_operation(self, operation_json, address, connection):
 		operation = operation_json["oper"]
@@ -114,9 +154,19 @@ class Server(object):
 
 		self.recv_verification(connection)
 	
+	def compare_tables(self, conn):
+		cont = 0
+		for neighboor in self.node_data:
+			if (self.node_data[neighboor]['cost'] > conn[cont]["weight"] and conn[cont]["weight"] !=0):
+				self.node_data[neighboor]['cost'] = conn[cont]["weight"]
+			cont += 1
+		
+		#print("Modificado", self.node_data)
+
+
 	def recv_request(self, connection, client_address):
 		# Recibe la solicitud
-		bytes_recv = connection.recv(self.buffer_size)
+		bytes_recv = connection.recv(1024)
 		message_recv = bytes_recv[0] # request = json_to_recv[0]
 		address = bytes_recv[1] # server_address_port = json_to_recv[1]
 		msg = bytes_recv.decode()
@@ -125,9 +175,10 @@ class Server(object):
 		if json_msg["type"] == "disconnect": # Caso en que el cliente se quiere desconectar
 			connection.close()
 		elif json_msg["type"] == "vector": # Caso en que le llega un vector de un nodo
-			print(json_msg["conn"])
-			# Calcule tabla de vectores
-			#self.Bellman_Ford_update(json_msg["conn"])
+			# print(json_msg["conn"])
+			# Compare tabla de vectores
+			self.compare_tables(json_msg["conn"])
+			self.Bellman_Ford_update(self.graph)
 		elif json_msg["type"] == "operation": # Caso en que recibe una operacion de un nodo
 			if (json_msg["destination"] == self.source):
 				self.cola_de_entrada.append(json_msg["operation"])
@@ -160,7 +211,7 @@ class Server(object):
 			if (self.can_listen == True): # Se pone a esuchar por conexiones
 				socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				socket_TCP.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-				print("Escuchando en", self.address_port)
+				# print("Escuchando en", self.address_port)
 				socket_TCP.bind(self.address_port)
 				socket_TCP.listen(7)
 				socket_TCP.settimeout(5)
@@ -178,7 +229,7 @@ class Server(object):
 				try:
 					# Agregar vector de vecinos
 					new_address = (self.neigh_ip[cont], self.neigh_port[cont])
-					print("Conectando en", new_address)
+					# print("Conectando en", new_address)
 					socket_TCP_connect.connect(new_address)
 					cont = cont + 1
 					if (cont == len(self.neigh_ip)):
@@ -191,14 +242,14 @@ class Server(object):
 							data_json = {"type": "vector", "node": self.source, "conn": self.distanceNeigh}
 					"""
 					data_json = {"type": "vector", "node": self.source, "conn": self.distanceNeigh}
+					#print(data_json)
 					self.send_json(data_json, socket_TCP_connect)
 				except:
 					cont = cont + 1
 					if (cont == len(self.neigh_ip)):
 						cont = 0
 						self.can_listen = True
-					# Cerrar socket
-				
+					socket_TCP_connect.close()
 		
 	def calc_table(self):
 		self.source = sys.argv[1]
