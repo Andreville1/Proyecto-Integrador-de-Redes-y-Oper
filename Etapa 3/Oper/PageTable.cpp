@@ -3,12 +3,16 @@
 #include <math.h>
 #include <time.h>
 
-PageTable::PageTable(){
+#include <iostream>
 
+PageTable::PageTable(){
+	this->entradas =  std::vector<std::array<PageTableEntry,3>>();
 }
 
 size_t PageTable::numeroFila(size_t indice){
-	return (indice - indice % 3)/3; 
+	size_t mod = indice % 3;
+	size_t diff = indice - mod;
+	return diff/3;
 }
 
 size_t PageTable::numeroColumna(size_t indice){
@@ -16,19 +20,33 @@ size_t PageTable::numeroColumna(size_t indice){
 }
 
 void PageTable::agregarEntrada(char operacion[byteSize]){
-	srand( time(NULL));
+
+	if(this->contador %3 == 0){
+		std::array<PageTableEntry,3> ptr = std::array<PageTableEntry,3>();
+		this->entradas.push_back(ptr);
+	}
+	
+	
 
 	PageTableEntry entry;
 	entry.setNumPag(0);
 	entry.setPresente(false);
-	entry.setDireccion( rand() % 10 + 1);
+	entry.setDireccion(this->contador);
 	entry.setOperacion(operacion);
 	entry.setReferencia(false);
 	
-	size_t fila = this->numeroColumna(this->contador); 
+	size_t fila = this->numeroFila(this->contador); 
 	size_t columna = this->numeroColumna(this->contador);
 
+
+
 	this->entradas[fila][columna] = entry;
+
+		std::cout << fila << ":" << columna << ": " << this->entradas[fila][columna] << std::endl;
+	
+	this->contador++;
+	this->mmu->Notify("OPPageTable", operacion, entry.getDireccion());
+
 }
 
 bool PageTable::buscarOperacion(char operacion[byteSize]){
@@ -41,4 +59,22 @@ bool PageTable::buscarOperacion(char operacion[byteSize]){
 		}
 	}
 	return false;
+}
+
+void PageTable::setMMU(ManejoMemoria* mmu){
+	this->mmu = mmu;
+}
+
+void PageTable::print(){
+	std::cout << "-----------------" << std::endl;
+	for (size_t fila = 0; fila < this->entradas.size(); fila++)
+	{
+		for (size_t columna = 0; columna < 3; columna++)
+		{
+			std::cout << this->entradas[fila][columna] << std::endl;
+		}
+		
+	}
+	
+	
 }
