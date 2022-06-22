@@ -13,7 +13,7 @@ class Memoria{
 
 	public:
 		Memoria();
-		void agregarPagina(PageTableEntry entrada);
+		void agregarPagina(PageTableEntry entrada, int numPag);
 		void setMMU(ManejoMemoria* mmu);
 };
 

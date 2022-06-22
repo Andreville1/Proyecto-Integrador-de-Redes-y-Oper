@@ -41,3 +41,7 @@ int PageReplacement::calculateFrame(int page) {
     replacePage(page);
     return ((pointer - 1) % num_frames + num_frames) % num_frames;
 }
+
+void PageReplacement::setMMU(ManejoMemoria* mmu){
+	this->mmu = mmu;
+}
