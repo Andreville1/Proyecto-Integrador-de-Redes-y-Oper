@@ -4,8 +4,12 @@ import socket
 import threading
 import sys
 
+from Oper.build.module_name import *
+
 class Server(object):
 	def __init__(self, address, port):
+		self.oper = Oper()
+
 		self.ip = address # OJO
 		self.address_port = (address, port)
 
@@ -131,6 +135,7 @@ class Server(object):
 				self.cola_de_entrada.append(json_msg["operation"])
 				print("Estoy recibiendo un fragmento de operacion", self.cola_de_entrada)
 				# ESTA PARTE LE TOCA A LUCIA Y ADRIAN
+				self.oper.agregarOperacion(json_msg["operation"])
 			else:
 				self.cola_de_salida.update({json_msg["destination"]:json_msg["operation"]}) # A: 5+5
 				print("Estoy guardando un fragmento de operacion", self.cola_de_salida)

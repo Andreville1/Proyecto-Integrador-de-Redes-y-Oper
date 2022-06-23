@@ -39,7 +39,7 @@ class Oper {
 PYBIND11_MODULE(module_name, module_handle) {
   module_handle.doc() = "I'm a docstring hehe";
   py::class_<Oper>(
-			module_handle, "PySomeClass"
+			module_handle, "Oper"
 			).def(py::init<>())
       .def("agregarOperacion", &Oper::agregarOperacion);
 }
