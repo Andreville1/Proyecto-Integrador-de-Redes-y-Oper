@@ -5,8 +5,12 @@
 
 #include "ManejoMemoria.h"
 
+#include <pybind11/pybind11.h>
+
+namespace py = pybind11;
+
 class PageReplacement {
-private:
+protected:
     int pointer = 0;
     int num_frames = 4;
     std::vector<int> pages {};
@@ -14,16 +18,17 @@ private:
 
 	ManejoMemoria* mmu;
 
-    bool pagePresent(int page);
-
-    void giveSecondChance(int page);
-
-    void replacePage(int page);
-	
+    
 
 public:
-    PageReplacement();
+    bool pagePresent(int page);
 
+        void giveSecondChance(int page);
+
+        void replacePage(int page);
+        
+    PageReplacement();
+    void print();
     int calculateFrame(int page);
 	void setMMU(ManejoMemoria *mmu);
 };

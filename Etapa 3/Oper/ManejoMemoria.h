@@ -10,6 +10,10 @@
 #include "Memoria.h"
 #include "PageReplacement.h"
 
+#include <pybind11/pybind11.h>
+
+namespace py = pybind11;
+
 class Disco;
 class PageTable;
 class Memoria;
@@ -26,10 +30,11 @@ class ManejoMemoria {
         std::vector<int> direcciones;
 
     public:
-        ManejoMemoria();
+        //ManejoMemoria();
         ManejoMemoria(Disco* disco, PageTable* pagina, Memoria* memoria, PageReplacement* algoritmo);
         void Notify(std::string evento, char* operacion, int numPag);
         void agregarOperacion(char* operacion);
+        void print();
 };
 
 #endif // MANEJOMEMORIA_H

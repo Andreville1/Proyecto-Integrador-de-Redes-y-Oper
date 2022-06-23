@@ -8,6 +8,10 @@
 #include "ManejoMemoria.h"
 #include "PageTableEntry.h"
 
+#include <pybind11/pybind11.h>
+
+namespace py = pybind11;
+
 class ManejoMemoria;
 
 #define byteSize 8
@@ -27,10 +31,11 @@ class PageTable{
 		size_t numeroColumna(size_t indice);
 		void setMMU(ManejoMemoria* mmu);
 		void print();
-		void agregarPagina();
 		void setNumPag(size_t numPag);
 		size_t getNumPag();
 
 };
+
+
 
 #endif

@@ -45,3 +45,20 @@ int PageReplacement::calculateFrame(int page) {
 void PageReplacement::setMMU(ManejoMemoria* mmu){
 	this->mmu = mmu;
 }
+
+void PageReplacement::print(){
+    std::cout << "PageReplacement class" << std::endl;
+}
+
+PYBIND11_MODULE(PR, PR_handle) {
+  PR_handle.doc() = "I'm a docstring hehe";
+  py::class_<PageReplacement>(
+			PR_handle, "PageReplacement"
+			).def(py::init<>())
+      .def("imprimir", &PageReplacement::print)
+	  .def("calcularFrame", &PageReplacement::calculateFrame)
+	  .def("setMMU", &PageReplacement::setMMU)
+      .def("pagPresente", &PageReplacement::pagePresent)
+    .def("darSecondChance", &PageReplacement::giveSecondChance)
+    .def("remplazarPag", &PageReplacement::replacePage);
+}

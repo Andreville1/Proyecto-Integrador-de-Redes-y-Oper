@@ -64,19 +64,19 @@ void PageTable::setMMU(ManejoMemoria* mmu){
 	this->mmu = mmu;
 }
 
-// void PageTable::print(){
-// 	std::cout << "-----------------" << std::endl;
-// 	for (size_t fila = 0; fila < this->entradas.size(); fila++)
-// 	{
-// 		for (size_t columna = 0; columna < 3; columna++)
-// 		{
-// 			std::cout << this->entradas[fila][columna] << std::endl;
-// 		}
+void PageTable::print(){
+	std::cout << "-----------------" << std::endl;
+	for (size_t fila = 0; fila < this->entradas.size(); fila++)
+	{
+		for (size_t columna = 0; columna < 3; columna++)
+		{
+			std::cout << this->entradas[fila][columna] << std::endl;
+		}
 		
-// 	}
+	}
 	
 	
-// }
+}
 
 void PageTable::setNumPag(size_t numPag){
 	this->numPag = numPag;
@@ -84,4 +84,19 @@ void PageTable::setNumPag(size_t numPag){
 
 size_t PageTable::getNumPag(){
 	return this->numPag;
+}
+
+PYBIND11_MODULE(PT, PT_handle) {
+  PT_handle.doc() = "I'm a docstring hehe";
+  py::class_<PageTable>(
+			PT_handle, "PageTable"
+			).def(py::init<>())
+      .def("imprimir", &PageTable::print)
+	  .def("buscar", &PageTable::buscarOperacion)
+	  .def("agregar", &PageTable::agregarEntrada)
+	  .def("numFila", &PageTable::numeroFila)
+	  .def("numCol", &PageTable::numeroColumna)
+	  .def("setMMU", &PageTable::setMMU)
+	  .def("setNumPag", &PageTable::setNumPag)
+	  .def("getNumPag", &PageTable::agregarEntrada);
 }
