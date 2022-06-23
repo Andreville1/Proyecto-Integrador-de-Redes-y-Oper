@@ -7,7 +7,7 @@
 
 class Memoria{
 	protected:
-		std::array<char*, 3> paginas;
+		std::array<char*, 4> paginas;
 		ManejoMemoria* mmu;
 		int count = 0;
 

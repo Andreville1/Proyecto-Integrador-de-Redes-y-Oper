@@ -8,7 +8,7 @@
 class PageReplacement {
 private:
     int pointer = 0;
-    int num_frames = 3;
+    int num_frames = 4;
     std::vector<int> pages {};
     std::vector<bool> secondChances {};
 

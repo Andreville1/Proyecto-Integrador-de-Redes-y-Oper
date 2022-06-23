@@ -28,6 +28,8 @@ class PageTable{
 		void setMMU(ManejoMemoria* mmu);
 		void print();
 		void agregarPagina();
+		void setNumPag(size_t numPag);
+		size_t getNumPag();
 
 };
 

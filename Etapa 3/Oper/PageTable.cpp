@@ -77,3 +77,11 @@ void PageTable::print(){
 	
 	
 }
+
+void PageTable::setNumPag(size_t numPag){
+	this->numPag = numPag;
+}
+
+size_t PageTable::getNumPag(){
+	return this->numPag;
+}

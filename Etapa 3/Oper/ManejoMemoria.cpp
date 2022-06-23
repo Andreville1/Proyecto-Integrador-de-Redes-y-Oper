@@ -27,16 +27,25 @@ void ManejoMemoria::Notify(std::string evento, char* operacion, int numPag){
         // Se agrega operacion al PT
         // agregar a memoria
         PageTableEntry* entrada = this->paginaTabla->buscarOperacion(operacion);
-        std::cout << "entrada:" << entrada << std::endl;
-		int numPagNueva = this->algoritmo->calculateFrame(numPag);
-        this->memoria->agregarPagina(*entrada, numPagNueva);
+        std::cout << "entrada en PT:" << *entrada << std::endl;
+		
+        int numPagNueva = this->algoritmo->calculateFrame(entrada->getNumPag());
+        if( numPagNueva != -1){
+            
+            this->memoria->agregarPagina(*entrada, numPagNueva);
+        }
+        else{
+            this->paginaTabla->setNumPag( this->paginaTabla->getNumPag() -1);
+        }
     }
 	if (evento == "agregoMem"){
-		PageTableEntry *entrada = this->paginaTabla->buscarOperacion(operacion);
+		PageTableEntry* entrada = this->paginaTabla->buscarOperacion(operacion);
+
+        
 		entrada->setNumPag(numPag);
 		entrada->setPresente(1);
 		entrada->setReferencia(1);
-		entrada->setDireccion(numPag);
+        std::cout << "agregoMem:" <<*entrada << std::endl;
 	}
 }
 
