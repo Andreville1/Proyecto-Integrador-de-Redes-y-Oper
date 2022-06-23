@@ -11,7 +11,9 @@ private:
 
     int checkUnmatchedParens(std::string expression);
 
-    std::string removeOps(std::string expression);
+    void removeOps(std::string expression);
+
+    void simplifySubExpression();
 
 public:
     std::string simplifyExpression(std::string expression);

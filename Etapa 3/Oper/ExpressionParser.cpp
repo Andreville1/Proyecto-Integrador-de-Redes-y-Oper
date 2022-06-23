@@ -1,5 +1,8 @@
 #include "ExpressionParser.hpp"
 #include <algorithm>
+#include <sstream>
+
+#include "exprtk.hpp"
 
 int ExpressionParser::checkUnmatchedParens(std::string expression) {
     int unmatchedParens = 0;
@@ -15,7 +18,7 @@ int ExpressionParser::checkUnmatchedParens(std::string expression) {
     return unmatchedParens;
 }
 
-std::string ExpressionParser::removeOps(std::string expression) {
+void ExpressionParser::removeOps(std::string expression) {
     // Valid operators: +, -, *, /, ^, sqrt(x), (, ).
 
     int unmatchedParens = checkUnmatchedParens(expression);
@@ -69,8 +72,21 @@ std::string ExpressionParser::removeOps(std::string expression) {
 
     int lastPos = subExpression.length() - append.length();
     subExpression = subExpression.substr(0, lastPos);
+}
 
-    return subExpression;
+void ExpressionParser::simplifySubExpression() {
+    typedef exprtk::expression<double>     expression_t;
+    typedef exprtk::parser<double>             parser_t;
+
+    expression_t expression;
+    parser_t parser;
+    parser.compile(subExpression, expression);
+
+    const int precision = 2;
+    std::ostringstream resultString;
+    resultString.precision(precision);
+    resultString << std::fixed << expression.value();
+    subExpression = resultString.str();
 }
 
 std::string ExpressionParser::simplifyExpression(std::string expression) {
@@ -78,10 +94,8 @@ std::string ExpressionParser::simplifyExpression(std::string expression) {
     append = "";
     subExpression = "";
 
-    //removeOps(expression);
-    //simplifySubExpression();
+    removeOps(expression);
+    simplifySubExpression();
 
-    //return prepend + subExpression + append;
-
-    return expression;
+    return prepend + subExpression + append;
 }
