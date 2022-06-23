@@ -49,7 +49,9 @@ void ManejoMemoria::Notify(std::string evento, char* operacion, int numPag){
 		entrada->setNumPag(numPag);
 		entrada->setPresente(1);
 		entrada->setReferencia(1);
-        std::cout << "agregoMem:" <<*entrada << std::endl;
+        std::cout << "agregoMem:" <<*entrada << std::endl; 
+        ExpressionParser parser;
+        std::string result = parser.simplifyExpression(operacion);
 	}
 }
 
@@ -62,13 +64,13 @@ void ManejoMemoria::print(){
     std::cout << "Manejo memoria class" << std::endl;
 }
 
-PYBIND11_MODULE(MMU, MMU_handle) {
-  MMU_handle.doc() = "I'm a docstring hehe";
-  py::class_<ManejoMemoria>(
-			MMU_handle, "ManejoMemoria"
-			).def(py::init<Disco*, PageTable*,Memoria*, PageReplacement*>())
-      .def("imprimir", &ManejoMemoria::print)
-      .def("notificar", &ManejoMemoria::Notify)
-      .def("addOP", &ManejoMemoria::agregarOperacion)
-      ;
-}
+// PYBIND11_MODULE(MMU, MMU_handle) {
+//   MMU_handle.doc() = "I'm a docstring hehe";
+//   py::class_<ManejoMemoria>(
+// 			MMU_handle, "ManejoMemoria"
+// 			).def(py::init<Disco*, PageTable*,Memoria*, PageReplacement*>())
+//       .def("imprimir", &ManejoMemoria::print)
+//       .def("notificar", &ManejoMemoria::Notify)
+//       .def("addOP", &ManejoMemoria::agregarOperacion)
+//       ;
+// }

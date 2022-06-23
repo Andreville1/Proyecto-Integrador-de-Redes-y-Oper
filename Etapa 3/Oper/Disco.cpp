@@ -21,13 +21,13 @@ void Disco::print(){
 }
 
 
-PYBIND11_MODULE(DISK, DISK_handle) {
- DISK_handle.doc() = "I'm a docstring hehe";
-  py::class_<Disco>(
-			DISK_handle, "Disco"
-			).def(py::init<>())
-      .def("imprimir", &Disco::print)
-	  .def("addOp", &Disco::agregarOperacion)
-	  .def("setMMU", &Disco::setMMU)
-      ;
-}
+// PYBIND11_MODULE(DISK, DISK_handle) {
+//  DISK_handle.doc() = "I'm a docstring hehe";
+//   py::class_<Disco>(
+// 			DISK_handle, "Disco"
+// 			).def(py::init<>())
+//       .def("imprimir", &Disco::print)
+// 	  .def("addOp", &Disco::agregarOperacion)
+// 	  .def("setMMU", &Disco::setMMU)
+//       ;
+// }

@@ -6,9 +6,9 @@
 #include "PageReplacement.h"
 #include "PageTableEntry.h"
 
-#include <pybind11/pybind11.h>
+// #include <pybind11/pybind11.h>
 
-namespace py = pybind11;
+// namespace py = pybind11;
 
 #include "ManejoMemoria.h"
 
@@ -36,10 +36,10 @@ int main(int argc, char const *argv[])
     return 0;
 }
 
-PYBIND11_MODULE(module_name, module_handle) {
-  module_handle.doc() = "I'm a docstring hehe";
-  py::class_<Oper>(
-			module_handle, "Oper"
-			).def(py::init<>())
-      .def("agregarOperacion", &Oper::agregarOperacion);
-}
+// PYBIND11_MODULE(module_name, module_handle) {
+//   module_handle.doc() = "I'm a docstring hehe";
+//   py::class_<Oper>(
+// 			module_handle, "Oper"
+// 			).def(py::init<>())
+//       .def("agregarOperacion", &Oper::agregarOperacion);
+// }

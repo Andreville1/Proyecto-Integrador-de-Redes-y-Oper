@@ -20,13 +20,13 @@ void Memoria::print(){
 	std::cout << "Memoria class" << std::endl;
 }
 
-PYBIND11_MODULE(MEM, MEM_handle) {
-  MEM_handle.doc() = "I'm a docstring hehe";
-  py::class_<Memoria>(
-			MEM_handle, "Memoria"
-			).def(py::init<>())
-      .def("imprimir", &Memoria::print)
-	  .def("addPage", &Memoria::agregarPagina)
-	  .def("setMMU", &Memoria::setMMU)
-      ;
-}
+// PYBIND11_MODULE(MEM, MEM_handle) {
+//   MEM_handle.doc() = "I'm a docstring hehe";
+//   py::class_<Memoria>(
+// 			MEM_handle, "Memoria"
+// 			).def(py::init<>())
+//       .def("imprimir", &Memoria::print)
+// 	  .def("addPage", &Memoria::agregarPagina)
+// 	  .def("setMMU", &Memoria::setMMU)
+//       ;
+// }

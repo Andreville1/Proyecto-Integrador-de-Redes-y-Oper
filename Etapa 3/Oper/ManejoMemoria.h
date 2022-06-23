@@ -9,10 +9,12 @@
 #include "PageTable.h"
 #include "Memoria.h"
 #include "PageReplacement.h"
+#include "ExpressionParser.hpp"
 
-#include <pybind11/pybind11.h>
 
-namespace py = pybind11;
+// #include <pybind11/pybind11.h>
+
+// namespace py = pybind11;
 
 class Disco;
 class PageTable;
@@ -28,6 +30,7 @@ class ManejoMemoria {
         Memoria* memoria;
 		PageReplacement* algoritmo;
         std::vector<int> direcciones;
+
 
     public:
         //ManejoMemoria();

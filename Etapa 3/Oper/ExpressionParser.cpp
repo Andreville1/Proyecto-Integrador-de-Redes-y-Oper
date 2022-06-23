@@ -99,3 +99,15 @@ std::string ExpressionParser::simplifyExpression(std::string expression) {
 
     return prepend + subExpression + append;
 }
+
+// PYBIND11_MODULE(PARS, PARS_handle) {
+//   PARS_handle.doc() = "I'm a docstring hehe";
+//   py::class_<ExpressionParser>(
+// 			PARS_handle, "ExpressionParser"
+// 			).def(py::init<>())
+//       .def("checkUnmatchedParens", &ExpressionParser::checkUnmatchedParens)
+//       .def("removeOps", &ExpressionParser::removeOps)
+//       .def("simplifySubExpression", &ExpressionParser::simplifySubExpression)
+//       .def("simplifyExpression", &ExpressionParser::simplifyExpression)
+//       ;
+// }

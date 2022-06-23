@@ -86,17 +86,17 @@ size_t PageTable::getNumPag(){
 	return this->numPag;
 }
 
-PYBIND11_MODULE(PT, PT_handle) {
-  PT_handle.doc() = "I'm a docstring hehe";
-  py::class_<PageTable>(
-			PT_handle, "PageTable"
-			).def(py::init<>())
-      .def("imprimir", &PageTable::print)
-	  .def("buscar", &PageTable::buscarOperacion)
-	  .def("agregar", &PageTable::agregarEntrada)
-	  .def("numFila", &PageTable::numeroFila)
-	  .def("numCol", &PageTable::numeroColumna)
-	  .def("setMMU", &PageTable::setMMU)
-	  .def("setNumPag", &PageTable::setNumPag)
-	  .def("getNumPag", &PageTable::agregarEntrada);
-}
+// PYBIND11_MODULE(PT, PT_handle) {
+//   PT_handle.doc() = "I'm a docstring hehe";
+//   py::class_<PageTable>(
+// 			PT_handle, "PageTable"
+// 			).def(py::init<>())
+//       .def("imprimir", &PageTable::print)
+// 	  .def("buscar", &PageTable::buscarOperacion)
+// 	  .def("agregar", &PageTable::agregarEntrada)
+// 	  .def("numFila", &PageTable::numeroFila)
+// 	  .def("numCol", &PageTable::numeroColumna)
+// 	  .def("setMMU", &PageTable::setMMU)
+// 	  .def("setNumPag", &PageTable::setNumPag)
+// 	  .def("getNumPag", &PageTable::agregarEntrada);
+// }
