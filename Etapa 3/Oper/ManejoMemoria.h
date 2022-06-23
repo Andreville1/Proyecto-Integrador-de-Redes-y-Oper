@@ -8,7 +8,7 @@
 #include "Disco.h"
 #include "PageTable.h"
 #include "Memoria.h"
-#include "PageReplacement.hpp"
+#include "PageReplacement.h"
 
 class Disco;
 class PageTable;
@@ -26,6 +26,7 @@ class ManejoMemoria {
         std::vector<int> direcciones;
 
     public:
+        ManejoMemoria();
         ManejoMemoria(Disco* disco, PageTable* pagina, Memoria* memoria, PageReplacement* algoritmo);
         void Notify(std::string evento, char* operacion, int numPag);
         void agregarOperacion(char* operacion);

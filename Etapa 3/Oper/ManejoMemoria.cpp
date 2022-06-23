@@ -1,6 +1,10 @@
 #include "ManejoMemoria.h"
 #include <iostream>
 
+ManejoMemoria::ManejoMemoria(){
+    
+}
+
 ManejoMemoria::ManejoMemoria(Disco* disco, PageTable* pagina, Memoria* memoria, PageReplacement* algoritmo) 
 {
     this->disco = disco;
@@ -27,7 +31,7 @@ void ManejoMemoria::Notify(std::string evento, char* operacion, int numPag){
         // Se agrega operacion al PT
         // agregar a memoria
         PageTableEntry* entrada = this->paginaTabla->buscarOperacion(operacion);
-        std::cout << "entrada en PT:" << *entrada << std::endl;
+        // std::cout << "entrada en PT:" << *entrada << std::endl;
 		
         int numPagNueva = this->algoritmo->calculateFrame(entrada->getNumPag());
         if( numPagNueva != -1){
@@ -45,7 +49,7 @@ void ManejoMemoria::Notify(std::string evento, char* operacion, int numPag){
 		entrada->setNumPag(numPag);
 		entrada->setPresente(1);
 		entrada->setReferencia(1);
-        std::cout << "agregoMem:" <<*entrada << std::endl;
+        // std::cout << "agregoMem:" <<*entrada << std::endl;
 	}
 }
 

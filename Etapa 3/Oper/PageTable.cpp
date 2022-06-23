@@ -64,19 +64,19 @@ void PageTable::setMMU(ManejoMemoria* mmu){
 	this->mmu = mmu;
 }
 
-void PageTable::print(){
-	std::cout << "-----------------" << std::endl;
-	for (size_t fila = 0; fila < this->entradas.size(); fila++)
-	{
-		for (size_t columna = 0; columna < 3; columna++)
-		{
-			std::cout << this->entradas[fila][columna] << std::endl;
-		}
+// void PageTable::print(){
+// 	std::cout << "-----------------" << std::endl;
+// 	for (size_t fila = 0; fila < this->entradas.size(); fila++)
+// 	{
+// 		for (size_t columna = 0; columna < 3; columna++)
+// 		{
+// 			std::cout << this->entradas[fila][columna] << std::endl;
+// 		}
 		
-	}
+// 	}
 	
 	
-}
+// }
 
 void PageTable::setNumPag(size_t numPag){
 	this->numPag = numPag;

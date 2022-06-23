@@ -1,4 +1,4 @@
-#include "PageReplacement.hpp"
+#include "PageReplacement.h"
 #include <algorithm>
 
 bool PageReplacement::pagePresent(int page) {
