@@ -7,6 +7,8 @@
 
 ManejoMemoria::ManejoMemoria(Disco* disco, PageTable* pagina, Memoria* memoria, PageReplacement* algoritmo) 
 {
+    this->file.open ("archivo.txt", std::fstream::in | std::fstream::out | std::fstream::app);;
+
     this->disco = disco;
     this->memoria = memoria;
     this->paginaTabla = pagina;
@@ -17,6 +19,10 @@ ManejoMemoria::ManejoMemoria(Disco* disco, PageTable* pagina, Memoria* memoria, 
     this->memoria->setMMU(this);
 	this->algoritmo->setMMU(this);
 
+}
+
+ManejoMemoria::~ManejoMemoria(){
+    this->file.close();
 }
 
 void ManejoMemoria::Notify(std::string evento, char* operacion, int numPag){
@@ -52,6 +58,7 @@ void ManejoMemoria::Notify(std::string evento, char* operacion, int numPag){
         std::cout << "agregoMem:" <<*entrada << std::endl; 
         ExpressionParser parser;
         std::string result = parser.simplifyExpression(operacion);
+        this->file << result << std::endl;
 	}
 }
 

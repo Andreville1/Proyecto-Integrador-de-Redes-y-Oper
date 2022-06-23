@@ -10,6 +10,7 @@
 #include "Memoria.h"
 #include "PageReplacement.h"
 #include "ExpressionParser.hpp"
+#include <fstream>
 
 
 // #include <pybind11/pybind11.h>
@@ -25,6 +26,7 @@ class PageReplacement;
 
 class ManejoMemoria {
     protected:
+        std::fstream file;
         Disco* disco;
         PageTable* paginaTabla;
         Memoria* memoria;
@@ -33,7 +35,7 @@ class ManejoMemoria {
 
 
     public:
-        //ManejoMemoria();
+        ~ManejoMemoria();
         ManejoMemoria(Disco* disco, PageTable* pagina, Memoria* memoria, PageReplacement* algoritmo);
         void Notify(std::string evento, char* operacion, int numPag);
         void agregarOperacion(char* operacion);

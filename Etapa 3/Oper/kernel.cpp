@@ -25,7 +25,7 @@ int main(int argc, char const *argv[])
     PageReplacement* algorithm = new PageReplacement();
     
     ManejoMemoria mmu(disk, pt, mem, algorithm);
-    mmu.agregarOperacion("2+2");
+    mmu.agregarOperacion("(2+2-");
     mmu.agregarOperacion("3+2");
     mmu.agregarOperacion("5+2");
       mmu.agregarOperacion("3+2");
