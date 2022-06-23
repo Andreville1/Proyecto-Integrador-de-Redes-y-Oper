@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.4...3.18)
+project(pybindtest)
+add_subdirectory(pybind11)
+pybind11_add_module(PT PageTable.cpp Disco.cpp PageTableEntry.cpp PageReplacement.cpp Memoria.cpp ManejoMemoria.cpp ExpressionParser.cpp)
+pybind11_add_module(PR PageTable.cpp Disco.cpp PageTableEntry.cpp PageReplacement.cpp Memoria.cpp ManejoMemoria.cpp ExpressionParser.cpp)
+pybind11_add_module(MEM PageTable.cpp Disco.cpp PageTableEntry.cpp PageReplacement.cpp Memoria.cpp ManejoMemoria.cpp ExpressionParser.cpp)
+pybind11_add_module(DISK PageTable.cpp Disco.cpp PageTableEntry.cpp PageReplacement.cpp Memoria.cpp ManejoMemoria.cpp ExpressionParser.cpp)
+pybind11_add_module(MMU PageTable.cpp Disco.cpp PageTableEntry.cpp PageReplacement.cpp Memoria.cpp ManejoMemoria.cpp ExpressionParser.cpp)

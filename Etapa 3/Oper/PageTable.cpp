@@ -29,7 +29,7 @@ void PageTable::agregarEntrada(char operacion[byteSize]){
 	
 
 	PageTableEntry entry;
-	entry.setNumPag(0);
+	entry.setNumPag(this->numPag);
 	entry.setPresente(false);
 	entry.setDireccion(this->contador);
 	entry.setOperacion(operacion);
@@ -43,20 +43,21 @@ void PageTable::agregarEntrada(char operacion[byteSize]){
 	this->entradas[fila][columna] = entry;
 	
 	this->contador++;
-	this->mmu->Notify("OPPageTable", operacion, entry.getDireccion());
+	this->numPag++;
+	this->mmu->Notify("OPPageTable", operacion, entry.getNumPag());
 
 }
 
-PageTableEntry PageTable::buscarOperacion(char operacion[byteSize]){
+PageTableEntry* PageTable::buscarOperacion(char operacion[byteSize]){
 	for (size_t fila = 0; fila < this->entradas.size(); ++fila)
 	{
 		for(size_t col = 0; col < 3; ++col){
 			if(this->entradas[fila][col].getOperacion() == operacion){
-				return this->entradas[fila][col];
+				return &this->entradas[fila][col];
 			}
 		}
 	}
-	return PageTableEntry();
+	return NULL;
 }
 
 void PageTable::setMMU(ManejoMemoria* mmu){
@@ -76,3 +77,26 @@ void PageTable::print(){
 	
 	
 }
+
+void PageTable::setNumPag(size_t numPag){
+	this->numPag = numPag;
+}
+
+size_t PageTable::getNumPag(){
+	return this->numPag;
+}
+
+// PYBIND11_MODULE(PT, PT_handle) {
+//   PT_handle.doc() = "I'm a docstring hehe";
+//   py::class_<PageTable>(
+// 			PT_handle, "PageTable"
+// 			).def(py::init<>())
+//       .def("imprimir", &PageTable::print)
+// 	  .def("buscar", &PageTable::buscarOperacion)
+// 	  .def("agregar", &PageTable::agregarEntrada)
+// 	  .def("numFila", &PageTable::numeroFila)
+// 	  .def("numCol", &PageTable::numeroColumna)
+// 	  .def("setMMU", &PageTable::setMMU)
+// 	  .def("setNumPag", &PageTable::setNumPag)
+// 	  .def("getNumPag", &PageTable::agregarEntrada);
+// }
