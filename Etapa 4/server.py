@@ -56,25 +56,40 @@ class Server(object):
             self.Date = str(datetime.now())
             #print("method, requesting_operation, host and date:", method, requesting_operation, self.Host, self.Date)
 
-            # Limpia la solicitud para que solo quede la operacion (si la hay)
-            operation = requesting_operation.split('?')[0]
-            operation = operation.lstrip('/')
-            #print("Client request:",operation)
-
-            # Convierte en bytes la operacion
-            self.ContentLength = len(operation)
-            #print(self.ContentLength)
+            # Limpia la solicitud para que solo quede el nombre de la operacion y la operacion (si las hay)
+            string_operation = requesting_operation.split('?')[0]
+            string_operation = string_operation.lstrip('/')
+            #print("Client request:",string_operation)
             
+            # Booleano para saber si es 404
+            can_continue = True
+
             # Si no escribe la operacion de primeras, muestra la pantalla principal
             is_empty = False
-            if(operation == ''):
+            if(string_operation == ''):
                 operation = 'homepage.html'
                 is_empty = True
+            else :
+                # Arreglo que guarda el nombre de la operacion y la operacion
+                operation = string_operation.split('=')
+                #print(operation)
 
-            try:
+                # Convierte en bytes la operacion
+                self.ContentLength = len(operation[1])
+                #print(self.ContentLength)
+
+                # Error 404
+                if operation[0] != "operation":
+                    header = 'HTTP/1.1 404 Not Found\n\n'
+                    response = '<html><body>Error 404: Page not found</body></html>'.encode('utf-8')
+                    can_continue = False
+                    is_empty = True
+
+                             
+            if can_continue == True:
                 # Calcula la operacion
                 if is_empty == False:
-                    response = eval(operation)
+                    response = eval(operation[1])
                     #print(response)
                 else: # Abre la pagina principal
                     file = open(operation, 'rb')
@@ -93,8 +108,6 @@ class Server(object):
                 if self.ContentLength != 0:
                     self.ContentLength = str(self.ContentLength)
                     self.save_bin()
-            except Exception as exception404:
-                print("ACA VA EL ERROR 404")
 
             # Codifica lo que se va a enviar
             final_response = header.encode('utf-8')
