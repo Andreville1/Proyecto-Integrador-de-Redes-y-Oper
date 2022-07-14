@@ -8,7 +8,7 @@ class Server(object):
 
         # Encabezados
         self.mimetype = "" # Content-Type
-        self.ContentLength = "" # Content-Length
+        self.ContentLength = 0 # Content-Length
         self.Host = "" # Host
         self.Date = "" # Date
 
@@ -62,7 +62,7 @@ class Server(object):
             #print("Client request:",operation)
 
             # Convierte en bytes la operacion
-            self.ContentLength = str(len(operation))
+            self.ContentLength = len(operation)
             #print(self.ContentLength)
             
             # Si no escribe la operacion de primeras, muestra la pantalla principal
@@ -90,7 +90,9 @@ class Server(object):
                 header += 'Content-Type: ' + str(self.mimetype) + '\n\n'
 
                 # Llama a la funcion que guarda la bitacora
-                self.save_bin()
+                if self.ContentLength != 0:
+                    self.ContentLength = str(self.ContentLength)
+                    self.save_bin()
             except Exception as exception404:
                 print("ACA VA EL ERROR 404")
 
