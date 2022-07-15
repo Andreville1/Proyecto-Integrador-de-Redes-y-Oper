@@ -16,6 +16,18 @@ class Server(object):
         self.bin = {} # Diccionario para guardar la bitacora
         self.bin['Bitacora'] = [] # Crea en el diccionario una key para la bitacora
 
+    def invalid_page(self):
+        body = "<!DOCTYPE html>\n"
+        body += "<html lang=\"en\">\n"
+        body += "<title> Error 404 (Not Found) </title>\n"
+        body += "<style>body {font-family: monospace} .err {color: red}</style>\n"
+        body += "<h1 class=\"err\"> Error 404: Not Found </h1>\n"
+        body += "<p>Page not found</p>\n"
+        body += "<hr><p><a href=\"/\">Back</a></p>\n"
+        body += "</html>\n"
+
+        return body
+        
     def save_bin(self):
         # Crea el json de la bitacora
         data_json = {"Content-Type": self.mimetype, "Content-Length": self.ContentLength, "Host": self.Host,
@@ -91,7 +103,8 @@ class Server(object):
                 # Error 404
                 if string_operation[0] != "/calculate?operation":
                     header = 'HTTP/1.1 404 Not Found\n\n'
-                    response = '<html><body>Error 404: Page not found</body></html>'
+                    response = self.invalid_page()
+                    #response = '<html><body>Error 404: Page not found</body></html>'
                     can_continue = False
                     is_empty = True
 
@@ -99,9 +112,9 @@ class Server(object):
             if can_continue == True:
                 # Calcula la operacion
                 if is_empty == False:
-                    temp = string_operation[1].replace("%2B", "+")
-                    #print(temp)
-                    response = eval(temp)
+                    string_operation[1] = string_operation[1].replace("%2B", "+")
+                    string_operation[1] = string_operation[1].replace("%2F", "/")
+                    response = eval(string_operation[1])
                     #print(response)
                 else: # Abre la pagina principal
                     response = self.serve_home_page()
