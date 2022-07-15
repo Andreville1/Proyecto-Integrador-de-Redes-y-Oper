@@ -36,9 +36,17 @@ class Server(object):
         body += "<style>body {font-family: monospace}</style>\n"
         body += "<h1> Calculator </h1>\n"
         body += "<form method=\"get\" action=\"/calculate\">\n"
-        body += "<label for=\"number\">Operation</label>\n"
+        
+        body += "<label for=\"username\">Username</label>\n"
+        body += "<input type=\"text\" name=\"username\" required/>\n"
+
+        body += "<label for=\"password\">Password</label>\n"
+        body += "<input type=\"text\" name=\"password\" required/>\n"
+
+        body += "<label for=\"operation\">Operation</label>\n"
         body += "<input type=\"text\" name=\"operation\" required/>\n"
         body += "<button type=\"submit\">Calculate</button>\n"
+
         body += "</form>\n"
         body += "</html>\n"
 
@@ -109,16 +117,22 @@ class Server(object):
             if(requesting_operation == '/'):
                 is_empty = True
             else :
-                # Arreglo que guarda el nombre de la operacion y la operacion
-                string_operation = requesting_operation.split('=')
+                # Separa los datos que recibe (/calculate?username=username, password=password, operation=operation)
+                string_operation = requesting_operation.split('&')
+                # Separa el username (/calculate?username, username)
+                username = string_operation[0].split('=')
+                # Separa el paswword (password, password)
+                password = string_operation[1].split('=')
+                # Separa la operacion (operation, operation)
+                operation = string_operation[2].split('=')
                 #print("Client request:",string_operation)
 
                 # Convierte en bytes la operacion
-                self.ContentLength = len(string_operation[1])
+                self.ContentLength = len(operation[1])
                 #print(self.ContentLength)
 
                 # Error 404
-                if string_operation[0] != "/calculate?operation":
+                if (username[0] != "/calculate?username") or (password[0] != "password") or (operation[0] != "operation"):
                     header = 'HTTP/1.1 404 Not Found\n\n'
                     response = self.invalid_page()
                     #response = '<html><body>Error 404: Page not found</body></html>'
@@ -129,10 +143,10 @@ class Server(object):
             if can_continue == True:
                 # Calcula la operacion
                 if is_empty == False:
-                    string_operation[1] = string_operation[1].replace("%2B", "+")
-                    string_operation[1] = string_operation[1].replace("%2F", "/")
-                    result = eval(string_operation[1])
-                    response = self.valid_request(string_operation[1], result)
+                    operation[1] = operation[1].replace("%2B", "+")
+                    operation[1] = operation[1].replace("%2F", "/")
+                    result = eval(operation[1])
+                    response = self.valid_request(operation[1], result)
                     #print(response)
                 else: # Abre la pagina principal
                     response = self.serve_home_page()
