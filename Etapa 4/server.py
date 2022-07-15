@@ -28,6 +28,17 @@ class Server(object):
         with open('bitacora.json', 'w') as file:
             json.dump(self.bin, file, indent=4)
 
+    def authentication(self, username, password):
+        valid_user = False
+        with open('users.json') as file:
+            data = json.load(file)
+            for users in data['users']:
+                if (users['username'] == username[1]):
+                    if (users['password'] == password[1]):
+                        valid_user = True
+        
+        return valid_user
+    
     def serve_home_page(self):
         body = "<!DOCTYPE html>\n"
         body += "<html lang=\"en\">\n"
@@ -64,6 +75,19 @@ class Server(object):
         body += "<p>"
         body += str(result)
         body += "</p>\n"
+        body += "<hr><p><a href=\"/\">Back</a></p>\n"
+        body += "</html>\n"
+
+        return body
+    
+    def invalid_authentication(self):
+        body = "<!DOCTYPE html>\n"
+        body += "<html lang=\"en\">\n"
+        body += "<meta charset=\"ascii\"/>\n"
+        body += "<title> Authentication </title>\n"
+        body += "<style>body {font-family: monospace} .err {color: red}</style>\n"
+        body += "<h1 class=\"err\"> Invalid authentication </h1>\n"
+        body += "<p> Try again </p>\n"
         body += "<hr><p><a href=\"/\">Back</a></p>\n"
         body += "</html>\n"
 
@@ -131,11 +155,15 @@ class Server(object):
                 self.ContentLength = len(operation[1])
                 #print(self.ContentLength)
 
+                # Validacion
+                if self.authentication(username, password) == False:
+                    header = 'HTTP/1.1 400 Bad Request\n\n'
+                    response = self.invalid_authentication()
+                    can_continue = False
                 # Error 404
-                if (username[0] != "/calculate?username") or (password[0] != "password") or (operation[0] != "operation"):
+                elif (username[0] != "/calculate?username") or (password[0] != "password") or (operation[0] != "operation"):
                     header = 'HTTP/1.1 404 Not Found\n\n'
                     response = self.invalid_page()
-                    #response = '<html><body>Error 404: Page not found</body></html>'
                     can_continue = False
                     is_empty = True
 
