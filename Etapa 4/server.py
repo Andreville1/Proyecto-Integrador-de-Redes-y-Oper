@@ -141,31 +141,42 @@ class Server(object):
             if(requesting_operation == '/'):
                 is_empty = True
             else :
-                # Separa los datos que recibe (/calculate?username=username, password=password, operation=operation)
-                string_operation = requesting_operation.split('&')
-                # Separa el username (/calculate?username, username)
-                username = string_operation[0].split('=')
-                # Separa el paswword (password, password)
-                password = string_operation[1].split('=')
-                # Separa la operacion (operation, operation)
-                operation = string_operation[2].split('=')
-                #print("Client request:",string_operation)
+                try:
+                    # Separa los datos que recibe (/calculate?username=username, password=password, operation=operation)
+                    string_operation = requesting_operation.split('&')
+                    # Separa el username (/calculate?username, username)
+                    username = string_operation[0].split('=')
+                    # Separa el paswword (password, password)
+                    password = string_operation[1].split('=')
+                    # Separa la operacion (operation, operation)
+                    operation = string_operation[2].split('=')
+                    
+                    #Verificacion para 404
+                    username[0] += "="
+                    password[0] = "&" + password[0] + "="
+                    operation[0] = "&" + operation[0] + "="
+                    #print("Client request:", string_operation)
+                    #print(username, password, operation)
 
-                # Convierte en bytes la operacion
-                self.ContentLength = len(operation[1])
-                #print(self.ContentLength)
+                    # Convierte en bytes la operacion
+                    self.ContentLength = len(operation[1])
+                    #print(self.ContentLength)
 
-                # Validacion
-                if self.authentication(username, password) == False:
-                    header = 'HTTP/1.1 400 Bad Request\n\n'
-                    response = self.invalid_authentication()
-                    can_continue = False
-                # Error 404
-                elif (username[0] != "/calculate?username") or (password[0] != "password") or (operation[0] != "operation"):
+                    # Error 404     
+                    if (username[0] != "/calculate?username=") or (password[0] != "&password=") or (operation[0] != "&operation="):
+                        header = 'HTTP/1.1 404 Not Found\n\n'
+                        response = self.invalid_page()
+                        can_continue = False
+                        is_empty = True
+                    # Validacion
+                    elif self.authentication(username, password) == False:
+                        header = 'HTTP/1.1 400 Bad Request\n\n'
+                        response = self.invalid_authentication()
+                        can_continue = False
+                except Exception as exception404: # Error 404
                     header = 'HTTP/1.1 404 Not Found\n\n'
                     response = self.invalid_page()
                     can_continue = False
-                    is_empty = True
 
                              
             if can_continue == True:
