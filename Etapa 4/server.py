@@ -28,6 +28,22 @@ class Server(object):
         with open('bitacora.json', 'w') as file:
             json.dump(self.bin, file, indent=4)
 
+    def serve_home_page(self):
+        body = "<!DOCTYPE html>\n"
+        body += "<html lang=\"en\">\n"
+        body += "<meta charset=\"ascii\"/>\n"
+        body += "<title> Calculator </title>\n"
+        body += "<style>body {font-family: monospace}</style>\n"
+        body += "<h1> Calculator </h1>\n"
+        body += "<form method=\"get\" action=\"/calculate\">\n"
+        body += "<label for=\"number\">Operation</label>\n"
+        body += "<input type=\"text\" name=\"operation\" required/>\n"
+        body += "<button type=\"submit\">Calculate</button>\n"
+        body += "</form>\n"
+        body += "</html>\n"
+
+        return body
+
     def run(self):
         # TOdo el proceso de creacion de sockets
         socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -40,7 +56,7 @@ class Server(object):
             # Acepta y establece conexion con el cliente
             connection , address = socket_TCP.accept()
             request = connection.recv(1024).decode('utf-8')
-            #print("request", request)
+            print("request", request)
 
             # Guarda lo que recibe en un arreglo
             request_list = request.split(' ')
@@ -56,32 +72,26 @@ class Server(object):
             self.Date = str(datetime.now())
             #print("method, requesting_operation, host and date:", method, requesting_operation, self.Host, self.Date)
 
-            # Limpia la solicitud para que solo quede el nombre de la operacion y la operacion (si las hay)
-            string_operation = requesting_operation.split('?')[0]
-            string_operation = string_operation.lstrip('/')
-            #print("Client request:",string_operation)
-            
             # Booleano para saber si es 404
             can_continue = True
 
             # Si no escribe la operacion de primeras, muestra la pantalla principal
             is_empty = False
-            if(string_operation == ''):
-                operation = 'homepage.html'
+            if(requesting_operation == '/'):
                 is_empty = True
             else :
                 # Arreglo que guarda el nombre de la operacion y la operacion
-                operation = string_operation.split('=')
-                #print(operation)
+                string_operation = requesting_operation.split('=')
+                #print("Client request:",string_operation)
 
                 # Convierte en bytes la operacion
-                self.ContentLength = len(operation[1])
+                self.ContentLength = len(string_operation[1])
                 #print(self.ContentLength)
 
                 # Error 404
-                if operation[0] != "operation":
+                if string_operation[0] != "/calculate?operation":
                     header = 'HTTP/1.1 404 Not Found\n\n'
-                    response = '<html><body>Error 404: Page not found</body></html>'.encode('utf-8')
+                    response = '<html><body>Error 404: Page not found</body></html>'
                     can_continue = False
                     is_empty = True
 
@@ -89,15 +99,15 @@ class Server(object):
             if can_continue == True:
                 # Calcula la operacion
                 if is_empty == False:
-                    response = eval(operation[1])
+                    temp = string_operation[1].replace("%2B", "+")
+                    #print(temp)
+                    response = eval(temp)
                     #print(response)
                 else: # Abre la pagina principal
-                    file = open(operation, 'rb')
-                    response = file.read()
-                    file.close()
+                    response = self.serve_home_page()
                 
                 
-                #Indica que la conexion funciono
+                # Indica que la conexion funciono
                 header = 'HTTP/1.1 200 OK\n'
                 # Establece que se va a mostrar un html
                 self.mimetype = 'text/html'
@@ -112,10 +122,7 @@ class Server(object):
             # Codifica lo que se va a enviar
             final_response = header.encode('utf-8')
             # Agrega la respuesta para enviarla
-            if is_empty == False:
-                final_response += str(response).encode('utf-8')
-            else:
-                final_response += response
+            final_response += str(response).encode('utf-8')
 
             # Envia el header y la respuesta
             connection.send(final_response)
