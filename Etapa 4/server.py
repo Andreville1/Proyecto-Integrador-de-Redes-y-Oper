@@ -46,7 +46,7 @@ class Server(object):
         body += "<title> Calculator </title>\n"
         body += "<style>body {font-family: monospace}</style>\n"
         body += "<h1> Calculator </h1>\n"
-        body += "<form method=\"get\" action=\"/calculate\">\n"
+        body += "<form method=\"POST\" action=\"/calculate\">\n"
         
         body += "<label for=\"username\">Username</label>\n"
         body += "<input type=\"text\" name=\"username\" required/>\n"
@@ -117,7 +117,7 @@ class Server(object):
             # Acepta y establece conexion con el cliente
             connection , address = socket_TCP.accept()
             request = connection.recv(1024).decode('utf-8')
-            print("request", request)
+            #print("request", request)
 
             # Guarda lo que recibe en un arreglo
             request_list = request.split(' ')
@@ -126,15 +126,22 @@ class Server(object):
             # Tipo de metodo (GET/POST)
             method = request_list[0]
             # Lo que solicita el cliente
-            requesting_operation = request_list[1]
+            if method == "GET":
+                requesting_operation = request_list[1]
+            elif method == "POST":
+                requesting_operation = request_list[len(request_list)-1]
+                requesting_operation = requesting_operation.replace("?1\r\n\r\n", "")
+                link_operation = request_list[1]
+
             # Host del server
             self.Host = request_list[3].split("\r", 1)[0]
             # Fecha del server
             self.Date = str(datetime.now())
             #print("method, requesting_operation, host and date:", method, requesting_operation, self.Host, self.Date)
-
+            
             # Booleano para saber si es 404
             can_continue = True
+            
 
             # Si no escribe la operacion de primeras, muestra la pantalla principal
             is_empty = False
@@ -143,7 +150,9 @@ class Server(object):
             else :
                 try:
                     # Separa los datos que recibe (/calculate?username=username, password=password, operation=operation)
+                    print('HOLAAA requesting_operation ', requesting_operation)
                     string_operation = requesting_operation.split('&')
+                    print('HOLAAA string_operation ', string_operation)
                     # Separa el username (/calculate?username, username)
                     username = string_operation[0].split('=')
                     # Separa el paswword (password, password)
@@ -162,8 +171,23 @@ class Server(object):
                     self.ContentLength = len(operation[1])
                     #print(self.ContentLength)
 
-                    # Error 404     
-                    if (username[0] != "/calculate?username=") or (password[0] != "&password=") or (operation[0] != "&operation="):
+                    if method == "GET":
+                        # Error 404     
+                        if (username[0] != "/calculate?username=") or (password[0] != "&password=") or (operation[0] != "&operation="):
+                            print("ERROR del if")
+                            header = 'HTTP/1.1 404 Not Found\n\n'
+                            response = self.invalid_page()
+                            can_continue = False
+                            is_empty = True
+                        elif self.authentication(username, password) == False:
+                            header = 'HTTP/1.1 400 Bad Request\n\n'
+                            print("HOLA ELIF")
+                            response = self.invalid_authentication()
+                            print("RESPONSE ELIF", response)
+                            body = str(response).encode('utf-8')
+                            can_continue = False
+                    elif link_operation != "/calculate":
+                        print("ERROR del if POST")
                         header = 'HTTP/1.1 404 Not Found\n\n'
                         response = self.invalid_page()
                         can_continue = False
@@ -171,9 +195,13 @@ class Server(object):
                     # Validacion
                     elif self.authentication(username, password) == False:
                         header = 'HTTP/1.1 400 Bad Request\n\n'
+                        print("HOLA ELIF")
                         response = self.invalid_authentication()
+                        print("RESPONSE ELIF", response)
+                        body = str(response).encode('utf-8')
                         can_continue = False
                 except Exception as exception404: # Error 404
+                    print("ERROR del except")
                     header = 'HTTP/1.1 404 Not Found\n\n'
                     response = self.invalid_page()
                     can_continue = False
@@ -185,33 +213,64 @@ class Server(object):
                     operation[1] = operation[1].replace("%2B", "+")
                     operation[1] = operation[1].replace("%2F", "/")
                     result = eval(operation[1])
+                    print("OPERATION", operation[1])
+                    print("RESULT", result)
                     response = self.valid_request(operation[1], result)
-                    #print(response)
+                    print("RESPONSE ",response)
                 else: # Abre la pagina principal
                     response = self.serve_home_page()
                 
-                
-                # Indica que la conexion funciono
-                header = 'HTTP/1.1 200 OK\n'
-                # Establece que se va a mostrar un html
-                self.mimetype = 'text/html'
-                # Agrega que lo que se va a mostrar es un html
-                header += 'Content-Type: ' + str(self.mimetype) + '\n\n'
+                if method == "GET":
+                    # Indica que la conexion funciono
+                    header = 'HTTP/1.1 200 OK\n'
+                    # Establece que se va a mostrar un html
+                    self.mimetype = 'text/html'
+                    # Agrega que lo que se va a mostrar es un html
+                    header += 'Content-Type: ' + str(self.mimetype) + '\n\n'
+
+                elif method == "POST":
+                    # Agrega la respuesta para enviarla
+                    if is_empty == False:
+                        body = str(response).encode('utf-8')
+                    else:
+                        body = response
+                    # Indica que la conexion funciono
+                    header = 'HTTP/1.1 200 OK\n'
+                    # Establece que se va a mostrar un html
+                    self.mimetype = 'text/html'
+                    # Agrega que lo que se va a mostrar es un html
+                    header += 'Content-Type: ' + str(self.mimetype) + '\n\n'
+                    #header += response + '\n\n'
+                    #header += 'Host: 8888\n\n'
+                    #header += 'Content-Length: '+ str(len(body)) + '\n\n'
+                    
 
                 # Llama a la funcion que guarda la bitacora
                 if self.ContentLength != 0:
                     self.ContentLength = str(self.ContentLength)
                     self.save_bin()
 
-            # Codifica lo que se va a enviar
-            final_response = header.encode('utf-8')
-            # Agrega la respuesta para enviarla
-            final_response += str(response).encode('utf-8')
-
-            # Envia el header y la respuesta
-            connection.send(final_response)
-            # Cierra la conexion
-            connection.close()
+            print('El method es: ', method)
+            if method == 'GET':
+                # Codifica lo que se va a enviar
+                final_response = header.encode('utf-8')
+                # Agrega la respuesta para enviarla
+                final_response += str(response).encode('utf-8')
+                print('Final response de get es: ', final_response)
+                # Envia el header y la respuesta
+                connection.send(final_response)
+                # Cierra la conexion
+                connection.close()
+            else:
+                # Codifica lo que se va a enviar
+                final_response = header.encode('utf-8')
+                final_response += body
+                print('response es: ', response)
+                print('Final response es: ', final_response)
+                # Envia el header y la respuesta
+                connection.send(final_response)
+                # Cierra la conexion
+                connection.close()
 
 def main():
     server = Server('127.0.0.1', 8888)
