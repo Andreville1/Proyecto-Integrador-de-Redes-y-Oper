@@ -2,9 +2,27 @@
     "Bitacora": [
         {
             "Content-Type": "text/html",
-            "Content-Length": "7",
+            "Content-Length": "11",
             "Host": "localhost:8888",
-            "Date": "2022-07-15 20:16:53.384057"
+            "Date": "2022-07-16 00:20:48.106694"
+        },
+        {
+            "Content-Type": "text/html",
+            "Content-Length": "8",
+            "Host": "localhost:8888",
+            "Date": "2022-07-16 00:20:59.760591"
+        },
+        {
+            "Content-Type": "text/html",
+            "Content-Length": "11",
+            "Host": "localhost:8888",
+            "Date": "2022-07-16 00:21:09.881622"
+        },
+        {
+            "Content-Type": "text/html",
+            "Content-Length": "9",
+            "Host": "localhost:8888",
+            "Date": "2022-07-16 00:21:15.340393"
         }
     ]
 }

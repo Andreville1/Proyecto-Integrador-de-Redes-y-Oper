@@ -1,6 +1,8 @@
 import socket
 import json
 from  datetime import datetime
+from math import *
+names = {'sqrt': sqrt}
 
 class Server(object):
     def __init__(self, address, port):
@@ -46,7 +48,7 @@ class Server(object):
         body += "<title> Calculator </title>\n"
         body += "<style>body {font-family: monospace}</style>\n"
         body += "<h1> Calculator </h1>\n"
-        body += "<form method=\"POST\" action=\"/calculate\">\n"
+        body += "<form method=\"GET\" action=\"/calculate\">\n"
         
         body += "<label for=\"username\">Username</label>\n"
         body += "<input type=\"text\" name=\"username\" required/>\n"
@@ -100,6 +102,16 @@ class Server(object):
         body += "<style>body {font-family: monospace} .err {color: red}</style>\n"
         body += "<h1 class=\"err\"> Error 404: Not Found </h1>\n"
         body += "<p>Page not found</p>\n"
+        body += "<hr><p><a href=\"/\">Back</a></p>\n"
+        body += "</html>\n"
+
+    def invalid_operation(self):
+        body = "<!DOCTYPE html>\n"
+        body += "<html lang=\"en\">\n"
+        body += "<title> Error 400 (Bad Request) </title>\n"
+        body += "<style>body {font-family: monospace} .err {color: red}</style>\n"
+        body += "<h1 class=\"err\"> Error 400: Bad Request </h1>\n"
+        body += "<p>Operation not valid</p>\n"
         body += "<hr><p><a href=\"/\">Back</a></p>\n"
         body += "</html>\n"
 
@@ -195,9 +207,7 @@ class Server(object):
                     # Validacion
                     elif self.authentication(username, password) == False:
                         header = 'HTTP/1.1 400 Bad Request\n\n'
-                        print("HOLA ELIF")
                         response = self.invalid_authentication()
-                        print("RESPONSE ELIF", response)
                         body = str(response).encode('utf-8')
                         can_continue = False
                 except Exception as exception404: # Error 404
@@ -206,21 +216,32 @@ class Server(object):
                     response = self.invalid_page()
                     can_continue = False
 
-                             
+            error = False               
             if can_continue == True:
                 # Calcula la operacion
                 if is_empty == False:
                     operation[1] = operation[1].replace("%2B", "+")
                     operation[1] = operation[1].replace("%2F", "/")
-                    result = eval(operation[1])
-                    print("OPERATION", operation[1])
-                    print("RESULT", result)
-                    response = self.valid_request(operation[1], result)
-                    print("RESPONSE ",response)
+                    operation[1] = operation[1].replace("%28", "(")
+                    operation[1] = operation[1].replace("%29", ")")
+                    try:
+                        print(operation[1])
+                        result = eval(operation[1], names)
+                        print("OPERATION", operation[1])
+                        print("RESULT", result)
+                        response = self.valid_request(operation[1], result)
+                        print("RESPONSE ",response)
+                    except Exception as exception400: # Error 400
+                        print("ERROR del 400")
+                        header = 'HTTP/1.1 400 Bad Request\n\n'
+                        response = self.invalid_operation()
+                        body = str(response).encode('utf-8')
+                        error = True
+
                 else: # Abre la pagina principal
                     response = self.serve_home_page()
                 
-                if method == "GET":
+                if method == "GET" and error == False:
                     # Indica que la conexion funciono
                     header = 'HTTP/1.1 200 OK\n'
                     # Establece que se va a mostrar un html
@@ -228,7 +249,7 @@ class Server(object):
                     # Agrega que lo que se va a mostrar es un html
                     header += 'Content-Type: ' + str(self.mimetype) + '\n\n'
 
-                elif method == "POST":
+                elif method == "POST" and error == False:
                     # Agrega la respuesta para enviarla
                     if is_empty == False:
                         body = str(response).encode('utf-8')
@@ -246,7 +267,7 @@ class Server(object):
                     
 
                 # Llama a la funcion que guarda la bitacora
-                if self.ContentLength != 0:
+                if self.ContentLength != 0 and error == False:
                     self.ContentLength = str(self.ContentLength)
                     self.save_bin()
 
