@@ -40,7 +40,17 @@ class Server(object):
                         valid_user = True
         
         return valid_user
-    
+
+    def get_code200(self):
+         # Indica que la conexion funciono
+        header = 'HTTP/1.1 200 OK\n'
+        # Establece que se va a mostrar un html
+        self.mimetype = 'text/html'
+        # Agrega que lo que se va a mostrar es un html
+        header += 'Content-Type: ' + str(self.mimetype) + '\n\n' 
+
+        return header 
+
     def serve_home_page(self):
         body = "<!DOCTYPE html>\n"
         body += "<html lang=\"en\">\n"
@@ -173,11 +183,8 @@ class Server(object):
                 if(requesting_operation == '/'):
                     is_empty = True
                     # Indica que la conexion funciono
-                    header = 'HTTP/1.1 200 OK\n'
-                    # Establece que se va a mostrar un html
-                    self.mimetype = 'text/html'
-                    # Agrega que lo que se va a mostrar es un html
-                    header += 'Content-Type: ' + str(self.mimetype) + '\n\n'
+                    header = self.get_code200()
+                    #print("Header", header)
                     response = self.serve_home_page()
                 else: # Calcule la operacion
                     #print("requesting_operation=", requesting_operation, "\n") # calculate?operation=1%2B1 
@@ -254,7 +261,6 @@ class Server(object):
                     if self.authentication(username, password) == False: # Valida autenticacion (400)
                         header = 'HTTP/1.1 400 Bad Request\n\n'
                         response = self.invalid_authentication()
-                        body = str(response).encode('utf-8')
                         can_continue = False
                     else: # Todo correcto
                         response = self.serve_calculate_page()
@@ -267,12 +273,8 @@ class Server(object):
       
                 if can_continue == True:
                     # Validacion correcta y procede a mandar a la pagina de la calculadora
-                    # Indica que la conexion funciono
-                    header = 'HTTP/1.1 200 OK\n'
-                    # Establece que se va a mostrar un html
-                    self.mimetype = 'text/html'
-                    # Agrega que lo que se va a mostrar es un html
-                    header += 'Content-Type: ' + str(self.mimetype) + '\n\n'      
+                    header = self.get_code200() 
+                    #print("Header", header) 
 
             # Codifica lo que se va a enviar
             final_response = header.encode('utf-8')
