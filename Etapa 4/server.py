@@ -41,6 +41,9 @@ class Server(object):
         
         return valid_user
 
+    def get_code404(self):
+        return 'HTTP/1.1 404 Not Found\n\n'
+
     def get_code200(self):
          # Indica que la conexion funciono
         header = 'HTTP/1.1 200 OK\n'
@@ -51,14 +54,25 @@ class Server(object):
 
         return header 
 
+    def get_parameters(self, method, request_list):
+        if method == "GET":
+            requesting_operation = request_list[1]
+            #print("requesting_operation", requesting_operation)
+            return requesting_operation
+        elif method == "POST":
+            requesting_operation = request_list[len(request_list)-1]
+            requesting_operation = requesting_operation.replace("?1\r\n\r\n", "")
+            #print("requesting_operation", requesting_operation)
+            return requesting_operation
+
     def serve_home_page(self):
         body = "<!DOCTYPE html>\n"
         body += "<html lang=\"en\">\n"
         body += "<meta charset=\"ascii\"/>\n"
         body += "<title> Calculator </title>\n"
-        body += "<style>body {font-family: monospace}</style>\n"
+        body += "<style>body {background: gray; color: white}</style>\n"
         body += "<h1> Calculator </h1>\n"
-        body += "<form method=\"POST\" action=\"/calculate\">\n"
+        body += "<body><form method=\"POST\" action=\"/calculate\">\n"
         
         body += "<label for=\"username\">Username</label>\n"
         body += "<input type=\"text\" name=\"username\" required/>\n"
@@ -67,7 +81,7 @@ class Server(object):
         body += "<input type=\"text\" name=\"password\" required/>\n"
         body += "<button type=\"submit\">Login</button>\n"
 
-        body += "</form>\n"
+        body += "</form></body>\n"
         body += "</html>\n"
 
         return body
@@ -77,7 +91,7 @@ class Server(object):
         body += "<html lang=\"en\">\n"
         body += "<meta charset=\"ascii\"/>\n"
         body += "<title> Calculator </title>\n"
-        body += "<style>body {font-family: monospace}</style>\n"
+        body += "<style>body {background: gray; color: white}</style>\n"
         body += "<h1> Calculator </h1>\n"
         body += "<form method=\"GET\" action=\"/calculate\">\n"
 
@@ -95,7 +109,7 @@ class Server(object):
         body += "<html lang=\"en\">\n"
         body += "<meta charset=\"ascii\"/>\n"
         body += "<title> Result </title>\n"
-        body += "<style>body {font-family: serif} .err {color: yellow}</style>\n"
+        body += "<style>body {background: gray; color: white} .err {color: yellow}</style>\n"
         body += "<h1> Result of operation "
         body += str(operation)
         body += "</h1>\n"
@@ -112,7 +126,7 @@ class Server(object):
         body += "<html lang=\"en\">\n"
         body += "<meta charset=\"ascii\"/>\n"
         body += "<title> Authentication </title>\n"
-        body += "<style>body {font-family: monospace} .err {color: red}</style>\n"
+        body += "<style>body {background: gray; color: white} .err {color: red}</style>\n"
         body += "<h1 class=\"err\"> Invalid authentication </h1>\n"
         body += "<p> Try again </p>\n"
         body += "<hr><p><a href=\"/\">Back</a></p>\n"
@@ -124,7 +138,7 @@ class Server(object):
         body = "<!DOCTYPE html>\n"
         body += "<html lang=\"en\">\n"
         body += "<title> Error 404 (Not Found) </title>\n"
-        body += "<style>body {font-family: monospace} .err {color: red}</style>\n"
+        body += "<style>body {background: gray; color: white} .err {color: red}</style>\n"
         body += "<h1 class=\"err\"> Error 404: Not Found </h1>\n"
         body += "<p>Page not found</p>\n"
         body += "<hr><p><a href=\"/\">Back</a></p>\n"
@@ -136,7 +150,7 @@ class Server(object):
         body = "<!DOCTYPE html>\n"
         body += "<html lang=\"en\">\n"
         body += "<title> Error 400 (Bad Request) </title>\n"
-        body += "<style>body {font-family: monospace} .err {color: red}</style>\n"
+        body += "<style>body {background: gray; color: white} .err {color: red}</style>\n"
         body += "<h1 class=\"err\"> Error 400: Bad Request </h1>\n"
         body += "<p>Operation not valid</p>\n"
         body += "<hr><p><a href=\"/\">Back</a></p>\n"
@@ -166,12 +180,8 @@ class Server(object):
             method = request_list[0]
             #print("method=", method, "\n")
 
-            # Lo que solicita el cliente
-            if method == "GET":
-                requesting_operation = request_list[1]
-            elif method == "POST":
-                requesting_operation = request_list[len(request_list)-1]
-                requesting_operation = requesting_operation.replace("?1\r\n\r\n", "")
+            # Guarda lo que escribe el cliente (parametros)
+            requesting_operation = self.get_parameters(method, request_list)
 
             # Host del server
             self.Host = request_list[3].split("\r", 1)[0]
@@ -181,7 +191,6 @@ class Server(object):
             
             if method == "GET":
                 if(requesting_operation == '/'):
-                    is_empty = True
                     # Indica que la conexion funciono
                     header = self.get_code200()
                     #print("Header", header)
@@ -195,7 +204,7 @@ class Server(object):
                         pass
 
                     if link_operation[0] != "/calculate": # Valida link (404)
-                        header = 'HTTP/1.1 404 Not Found\n\n'
+                        header = self.get_code404()
                         response = self.invalid_page()
 
                     else: # Todo correcto
@@ -229,14 +238,13 @@ class Server(object):
                                 header = 'HTTP/1.1 400 Bad Request\n\n'
                                 response = self.invalid_operation()
                                 #body = str(response).encode('utf-8')
-                                error = True
 
                             # Llama a la funcion que guarda la bitacora
                             if self.ContentLength != 0:
                                 self.ContentLength = str(self.ContentLength)
                                 self.save_bin()
                         else: # Error 404
-                            header = 'HTTP/1.1 404 Not Found\n\n'
+                            header = self.get_code404()
                             response = self.invalid_page()
             elif method == "POST":
                 # Booleano para saber si es 404
@@ -267,7 +275,7 @@ class Server(object):
 
                 except Exception as exception404: # Error 404
                     #print("ERROR del except")
-                    header = 'HTTP/1.1 404 Not Found\n\n'
+                    header = self.get_code404()
                     response = self.invalid_page()
                     can_continue = False
       
