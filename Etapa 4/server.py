@@ -267,7 +267,7 @@ class Server(object):
                     #print(username, password)
 
                     if self.authentication(username, password) == False: # Valida autenticacion (400)
-                        header = 'HTTP/1.1 400 Bad Request\n\n'
+                        header = 'HTTP/1.1 401 Unauthorized\n\n'
                         response = self.invalid_authentication()
                         can_continue = False
                     else: # Todo correcto
